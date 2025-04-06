@@ -46,10 +46,10 @@ This document breaks down the features required for the proofPot application int
         - Emit the `RecipeAdded` event.
      - Compile the contract: `npx hardhat compile`. ✅
 
-### 1.5: Smart Contract Deployment Script
-     - Create `scripts/deploy.ts`.
-     - Write script using `ethers.js` (via Hardhat) to deploy `RecipeRegistry.sol`.
-     - Log the deployed contract address upon successful deployment.
+### 1.5: Smart Contract Deployment Script ✅
+     - Create `scripts/deploy.ts`. ✅
+     - Write script using `ethers.js` (via Hardhat) to deploy `RecipeRegistry.sol`. ✅
+     - Log the deployed contract address upon successful deployment. ✅
 
 ### 1.6: Smart Contract Testing
      - Create `test/RecipeRegistry.test.ts`.
