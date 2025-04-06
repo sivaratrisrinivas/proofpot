@@ -31,20 +31,20 @@ This document breaks down the features required for the proofPot application int
      - Install Hardhat toolbox: `npm install --save-dev @nomicfoundation/hardhat-toolbox @nomicfoundation/hardhat-network-helpers @nomicfoundation/hardhat-chai-matchers @nomiclabs/hardhat-ethers @nomiclabs/hardhat-etherscan chai ethers hardhat-gas-reporter solidity-coverage @typechain/hardhat @typechain/ethers-v5 typechain typescript ts-node @types/node @types/mocha @types/chai` (or the JS equivalents). ✅ (Toolbox covers most)
      - Delete the sample contract (`Lock.sol`) and test/script files. ✅
 
-### 1.4: Smart Contract Development (`RecipeRegistry.sol`)
-     - Create `contracts/RecipeRegistry.sol`.
-     - Define the Solidity version (e.g., `pragma solidity ^0.8.0;`).
-     - Define the `RecipeRegistry` contract.
-     - Add state variables:
+### 1.4: Smart Contract Development (`RecipeRegistry.sol`) ✅
+     - Create `contracts/RecipeRegistry.sol`. ✅
+     - Define the Solidity version (e.g., `pragma solidity ^0.8.0;`). ✅
+     - Define the `RecipeRegistry` contract. ✅
+     - Add state variables: ✅
         - `mapping(bytes32 => address) public recipeOwners;`
         - `mapping(bytes32 => uint256) public recipeTimestamps;`
-     - Define an event: `event RecipeAdded(bytes32 indexed recipeHash, address indexed creator, uint256 timestamp);`
-     - Implement the `addRecipe(bytes32 _recipeHash)` function:
+     - Define an event: `event RecipeAdded(bytes32 indexed recipeHash, address indexed creator, uint256 timestamp);` ✅
+     - Implement the `addRecipe(bytes32 _recipeHash)` function: ✅
         - Check if hash exists: `require(recipeOwners[_recipeHash] == address(0), "Recipe hash already exists");`
         - Store owner: `recipeOwners[_recipeHash] = msg.sender;`
         - Store timestamp: `recipeTimestamps[_recipeHash] = block.timestamp;`
         - Emit the `RecipeAdded` event.
-     - Compile the contract: `npx hardhat compile`.
+     - Compile the contract: `npx hardhat compile`. ✅
 
 ### 1.5: Smart Contract Deployment Script
      - Create `scripts/deploy.ts`.
