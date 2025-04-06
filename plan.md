@@ -51,14 +51,14 @@ This document breaks down the features required for the proofPot application int
      - Write script using `ethers.js` (via Hardhat) to deploy `RecipeRegistry.sol`. ✅
      - Log the deployed contract address upon successful deployment. ✅
 
-### 1.6: Smart Contract Testing
-     - Create `test/RecipeRegistry.test.ts`.
-     - Write tests for the `addRecipe` function:
-        - Test successful addition of a new recipe hash.
-        - Test that owner and timestamp are stored correctly.
-        - Test that the `RecipeAdded` event is emitted with correct parameters.
-        - Test that adding the same hash twice fails with the correct error message.
-     - Run tests: `npx hardhat test`.
+### 1.6: Smart Contract Testing ✅
+     - Create `test/RecipeRegistry.test.ts`. ✅
+     - Write tests for the `addRecipe` function: ✅
+        - Test successful addition of a new recipe hash. ✅
+        - Test that owner and timestamp are stored correctly. ✅
+        - Test that the `RecipeAdded` event is emitted with correct parameters. ✅
+        - Test that adding the same hash twice fails with the correct error message. ✅
+     - Run tests: `npx hardhat test`. ✅
 
 ### 1.7: Smart Contract Deployment to Sepolia
      - Configure `hardhat.config.ts`.
