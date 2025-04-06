@@ -60,4 +60,9 @@ export class MockRecipeContract implements RecipeContract {
     
     return { success: true, txHash };
   }
+
+  async getRecipeDetails(tokenId: string): Promise<RecipeToken | null> {
+    const token = recipeTokens.find(t => t.tokenId === tokenId);
+    return token || null;
+  }
 }

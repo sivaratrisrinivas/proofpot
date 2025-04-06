@@ -4,6 +4,7 @@ export interface RecipeContract {
   getRecipeOwner: (tokenId: string) => Promise<string>;
   getRecipesByOwner: (ownerAddress: string) => Promise<string[]>;
   transferRecipe: (tokenId: string, toAddress: string) => Promise<{ success: boolean, txHash: string }>;
+  getRecipeDetails: (tokenId: string) => Promise<RecipeToken | null>;
 }
 
 export interface ContractTransaction {

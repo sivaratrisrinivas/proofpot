@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addRecipe } from '@/services/recipeService';
@@ -8,8 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
-import { X, Plus, ArrowLeft } from 'lucide-react';
+import { X, Plus, ArrowLeft, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { useWallet } from '@/lib/blockchain/WalletContext';
+import { useContract } from '@/lib/blockchain/ContractContext';
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -18,10 +20,19 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage
 } from '@/components/ui/breadcrumb';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const CreateRecipePage = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isConnected, account } = useWallet();
+  const { mintRecipe } = useContract();
+  const [mintOnBlockchain, setMintOnBlockchain] = useState(false);
   
   const [form, setForm] = useState({
     title: '',
@@ -72,7 +83,6 @@ const CreateRecipePage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!form.title.trim()) {
       toast({
         title: "Missing title",
@@ -91,7 +101,6 @@ const CreateRecipePage = () => {
       return;
     }
     
-    // Filter out empty strings from arrays
     const ingredients = form.ingredients.filter(i => i.trim());
     const steps = form.steps.filter(s => s.trim());
     const tags = form.tags.filter(t => t.trim());
@@ -117,7 +126,6 @@ const CreateRecipePage = () => {
     setIsSubmitting(true);
     
     try {
-      // Prepare data
       const recipeData: Omit<Recipe, 'id' | 'createdAt'> = {
         title: form.title,
         description: form.description,
@@ -125,7 +133,7 @@ const CreateRecipePage = () => {
         steps,
         creator: {
           name: form.creatorName,
-          id: 'user-' + Date.now() // In a real app, this would be a real user ID
+          id: 'user-' + Date.now()
         },
         imageUrl: form.imageUrl || undefined,
         tags: tags.length > 0 ? tags : ['Uncategorized'],
@@ -135,6 +143,31 @@ const CreateRecipePage = () => {
       };
       
       const response = await addRecipe(recipeData);
+      
+      let tokenId = null;
+      let txHash = null;
+      
+      if (mintOnBlockchain && isConnected) {
+        try {
+          const mintResult = await mintRecipe(form.title, form.description);
+          if (mintResult) {
+            tokenId = mintResult.tokenId;
+            txHash = mintResult.txHash;
+            
+            toast({
+              title: "Recipe minted on blockchain",
+              description: `Your recipe has been minted as an NFT with token ID: ${tokenId.substring(0, 8)}...`,
+            });
+          }
+        } catch (error) {
+          console.error('Error minting recipe on blockchain:', error);
+          toast({
+            title: "Blockchain minting failed",
+            description: "The recipe was created but couldn't be minted on the blockchain.",
+            variant: "destructive"
+          });
+        }
+      }
       
       toast({
         title: "Recipe created",
@@ -390,6 +423,53 @@ const CreateRecipePage = () => {
               onChange={handleChange}
               placeholder="Enter your name"
             />
+          </div>
+          
+          <div className="border p-4 rounded-md bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-medium">Blockchain Registration</h3>
+                  <p className="text-sm text-muted-foreground">Mint this recipe as an NFT on the blockchain</p>
+                </div>
+              </div>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2">
+                      <Switch 
+                        id="mint-blockchain" 
+                        checked={mintOnBlockchain}
+                        onCheckedChange={setMintOnBlockchain}
+                        disabled={!isConnected}
+                      />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isConnected 
+                      ? "Register your recipe ownership on the blockchain" 
+                      : "Connect your wallet to enable blockchain registration"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            {!isConnected && (
+              <p className="mt-2 text-sm text-amber-600">
+                You need to connect your wallet to register recipes on the blockchain.
+              </p>
+            )}
+            
+            {mintOnBlockchain && isConnected && (
+              <div className="mt-2 text-sm bg-background/50 p-2 rounded">
+                <p>
+                  Your recipe will be minted as a non-fungible token (NFT) on the blockchain,
+                  proving your ownership of this unique recipe.
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="flex justify-end space-x-4 pt-4">

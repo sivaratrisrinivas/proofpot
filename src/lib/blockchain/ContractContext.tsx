@@ -9,6 +9,7 @@ interface ContractContextType {
   recipeContract: RecipeContract | null;
   isInitializing: boolean;
   mintRecipe: (title: string, description: string) => Promise<{ tokenId: string, txHash: string } | null>;
+  getTokenIdForRecipe: (recipeId: string) => Promise<string | null>;
 }
 
 const ContractContext = createContext<ContractContextType | undefined>(undefined);
@@ -24,6 +25,10 @@ export const useContract = (): ContractContextType => {
 interface ContractProviderProps {
   children: ReactNode;
 }
+
+// This is a simple mock storage to associate recipe IDs with token IDs
+// In a real app, this would be stored in a database
+const recipeTokenMap: Record<string, string> = {};
 
 export const ContractProvider = ({ children }: ContractProviderProps) => {
   const { account, isConnected } = useWallet();
@@ -71,6 +76,13 @@ export const ContractProvider = ({ children }: ContractProviderProps) => {
 
     try {
       const result = await recipeContract.mintRecipe(title, description, account);
+      
+      // In a real app, we would store this association in a database
+      // For this demo, we're using a simple in-memory object
+      // This would allow us to look up the token ID for a recipe ID
+      const recipeId = `recipe-${Date.now()}`; // Simulating a recipe ID
+      recipeTokenMap[recipeId] = result.tokenId;
+      
       toast({
         title: "Recipe minted",
         description: `Recipe "${title}" has been minted as an NFT.`,
@@ -87,10 +99,18 @@ export const ContractProvider = ({ children }: ContractProviderProps) => {
     }
   };
 
+  // Function to get the token ID for a recipe
+  const getTokenIdForRecipe = async (recipeId: string): Promise<string | null> => {
+    // In a real app, we would query a database to get the token ID for a recipe ID
+    // For this demo, we're using a simple in-memory object
+    return recipeTokenMap[recipeId] || null;
+  };
+
   const value = {
     recipeContract,
     isInitializing,
     mintRecipe,
+    getTokenIdForRecipe,
   };
 
   return (
