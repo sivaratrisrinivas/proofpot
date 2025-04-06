@@ -25,11 +25,11 @@ This document breaks down the features required for the proofPot application int
         - `created_at` (TIMESTAMP WITH TIME ZONE, default NOW())
      - Create the `recipes` table using SQL commands. ✅
 
-### 1.3: Smart Contract Setup (Solidity/Hardhat)
-     - Create a new directory for the contract (e.g., `smart-contract`).
-     - Inside `smart-contract`, initialize a Hardhat project (`npx hardhat`). Choose "Create a TypeScript project" (or JavaScript if preferred).
-     - Install Hardhat toolbox: `npm install --save-dev @nomicfoundation/hardhat-toolbox @nomicfoundation/hardhat-network-helpers @nomicfoundation/hardhat-chai-matchers @nomiclabs/hardhat-ethers @nomiclabs/hardhat-etherscan chai ethers hardhat-gas-reporter solidity-coverage @typechain/hardhat @typechain/ethers-v5 typechain typescript ts-node @types/node @types/mocha @types/chai` (or the JS equivalents).
-     - Delete the sample contract (`Lock.sol`) and test/script files.
+### 1.3: Smart Contract Setup (Solidity/Hardhat) ✅
+     - Create a new directory for the contract (e.g., `smart-contract`). ✅
+     - Inside `smart-contract`, initialize a Hardhat project (`npx hardhat`). Choose "Create a TypeScript project" (or JavaScript if preferred). ✅
+     - Install Hardhat toolbox: `npm install --save-dev @nomicfoundation/hardhat-toolbox @nomicfoundation/hardhat-network-helpers @nomicfoundation/hardhat-chai-matchers @nomiclabs/hardhat-ethers @nomiclabs/hardhat-etherscan chai ethers hardhat-gas-reporter solidity-coverage @typechain/hardhat @typechain/ethers-v5 typechain typescript ts-node @types/node @types/mocha @types/chai` (or the JS equivalents). ✅ (Toolbox covers most)
+     - Delete the sample contract (`Lock.sol`) and test/script files. ✅
 
 ### 1.4: Smart Contract Development (`RecipeRegistry.sol`)
      - Create `contracts/RecipeRegistry.sol`.
