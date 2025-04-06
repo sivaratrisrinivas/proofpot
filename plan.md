@@ -12,10 +12,10 @@ This document breaks down the features required for the proofPot application int
      - Create a basic health check endpoint (`/ping`) that returns "pong". ✅
      - Run the server locally (`go run main.go`). ✅
 
-### 1.2: Database Setup (PostgreSQL)
-     - Install PostgreSQL locally or set up a cloud instance.
-     - Create a database named `proofpot_dev`.
-     - Design the `recipes` table schema:
+### 1.2: Database Setup (PostgreSQL) ✅
+     - Install PostgreSQL locally or set up a cloud instance. ✅
+     - Create a database named `proofpot_dev`. ✅
+     - Design the `recipes` table schema: ✅
         - `id` (SERIAL PRIMARY KEY)
         - `title` (VARCHAR, not null)
         - `ingredients` (TEXT, not null)
@@ -23,7 +23,7 @@ This document breaks down the features required for the proofPot application int
         - `creator_address` (VARCHAR, not null)
         - `content_hash` (VARCHAR, not null, unique)
         - `created_at` (TIMESTAMP WITH TIME ZONE, default NOW())
-     - Create the `recipes` table using SQL commands.
+     - Create the `recipes` table using SQL commands. ✅
 
 ### 1.3: Smart Contract Setup (Solidity/Hardhat)
      - Create a new directory for the contract (e.g., `smart-contract`).
