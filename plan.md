@@ -60,18 +60,18 @@ This document breaks down the features required for the proofPot application int
         - Test that adding the same hash twice fails with the correct error message. ✅
      - Run tests: `npx hardhat test`. ✅
 
-### 1.7: Smart Contract Deployment to Sepolia
-     - Configure `hardhat.config.ts`.
-     - Ensure the deployer wallet has Sepolia ETH.
-     - Run the deployment script targeting Sepolia: `npx hardhat run scripts/deploy.ts --network sepolia`.
-     - Save the deployed contract address securely.
+### 1.7: Smart Contract Deployment to Sepolia ✅
+     - Configure `hardhat.config.ts`. ✅
+     - Ensure the deployer wallet has Sepolia ETH. ✅
+     - Run the deployment script targeting Sepolia: `npx hardhat run scripts/deploy.ts --network sepolia`. ✅
+     - Save the deployed contract address securely. ✅
 
-### 1.8: Backend - Database Connection & Models
-     - Install Go Postgres driver (`go get github.com/lib/pq`).
-     - Create a `database` package.
-     - Implement logic to connect to the PostgreSQL database using connection string from environment variables.
-     - Create a `models` package.
-     - Define a `Recipe` struct matching the database schema.
+### 1.8: Backend - Database Connection & Models ✅
+     - Install Go Postgres driver (`go get github.com/lib/pq`). ✅
+     - Create a `database` package. ✅
+     - Implement logic to connect to the PostgreSQL database using connection string from environment variables. ✅
+     - Create a `models` package. ✅
+     - Define a `Recipe` struct matching the database schema. ✅
 
 ## Phase 2: Frontend Setup & Wallet Connection ✅
 
