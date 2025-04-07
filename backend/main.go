@@ -57,7 +57,7 @@ func main() {
 		api.POST("/recipes", handlers.HandleCreateRecipe)
 		// --- TODO: Add GET routes here later (Step 4.1, 4.2) ---
 		api.GET("/recipes", handlers.HandleGetRecipes)
-		// api.GET("/recipes/:hash", handlers.HandleGetRecipeByHash)
+		api.GET("/recipes/:hash", handlers.HandleGetRecipeByHash)
 	}
 
 	// Run the server in a goroutine so it doesn't block

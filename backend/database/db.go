@@ -112,5 +112,30 @@ func GetAllRecipes() ([]models.RecipeListItem, error) {
 	return recipes, nil
 }
 
+// GetRecipeByHash retrieves a single full recipe by its content hash.
+// It returns sql.ErrNoRows if no recipe is found with the given hash.
+func GetRecipeByHash(hash string) (models.Recipe, error) {
+	var recipe models.Recipe
+	query := `SELECT id, title, ingredients, steps, creator_address, content_hash, created_at FROM recipes WHERE content_hash = $1`
+
+	err := DB.QueryRow(query, hash).Scan(
+		&recipe.ID,
+		&recipe.Title,
+		&recipe.Ingredients,
+		&recipe.Steps,
+		&recipe.CreatorAddress,
+		&recipe.ContentHash,
+		&recipe.CreatedAt,
+	)
+
+	if err != nil {
+		// Return the error directly. If it's sql.ErrNoRows, the handler will deal with it.
+		// Otherwise, it's a genuine database error.
+		return models.Recipe{}, fmt.Errorf("error querying or scanning recipe by hash %s: %w", hash, err)
+	}
+
+	return recipe, nil
+}
+
 // --- TODO: Add functions for GET endpoints here later (Step 4.1, 4.2) ---
 // GetRecipeByHash(hash string) (models.Recipe, error)

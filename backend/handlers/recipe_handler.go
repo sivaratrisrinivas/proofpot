@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"database/sql" // Needed for sql.ErrNoRows
+	"errors"       // Needed for errors.Is
 	"log"
 	"net/http"
 	"proofpot-backend/blockchain"
@@ -75,4 +77,31 @@ func HandleGetRecipes(c *gin.Context) {
 	// Return 200 OK with the list of recipes
 	// If no recipes exist, this will correctly return an empty list `[]`
 	c.JSON(http.StatusOK, recipes)
+}
+
+// HandleGetRecipeByHash handles the GET request to retrieve a single recipe by its hash.
+func HandleGetRecipeByHash(c *gin.Context) {
+	// Get the hash from the URL parameter
+	hash := c.Param("hash")
+	if hash == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe hash parameter is missing"})
+		return
+	}
+
+	// Call the database function to get the recipe
+	recipe, err := database.GetRecipeByHash(hash)
+	if err != nil {
+		// Check if the error is specifically "no rows found"
+		if errors.Is(err, sql.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
+		} else {
+			// Log the actual database error and return a generic server error
+			log.Printf("Error retrieving recipe by hash %s: %v", hash, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error retrieving recipe"})
+		}
+		return
+	}
+
+	// Return 200 OK with the found recipe
+	c.JSON(http.StatusOK, recipe)
 }

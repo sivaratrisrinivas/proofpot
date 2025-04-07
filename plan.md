@@ -172,11 +172,11 @@ This document breaks down the features required for the proofPot application int
     - In the `database` package, create `GetAllRecipes() ([]models.RecipeListItem, error)`. Implement the SQL query `SELECT id, title, creator_address, content_hash, created_at FROM recipes ORDER BY created_at DESC;` (Note: Exclude large text fields for list view). ✅
     - In the handler, call `GetAllRecipes`, handle errors, and return the list as JSON. ✅
 
-### 4.2: Backend - Get Single Recipe Endpoint (`GET /api/recipes/:hash`)
-    - Define the `GET /api/recipes/:hash` route and handler (`handleGetRecipeByHash`).
-    - Get the `hash` parameter from the URL.
-    - In the `database` package, create `GetRecipeByHash(hash string) (models.Recipe, error)`. Implement the SQL query `SELECT * FROM recipes WHERE content_hash = $1;`. Handle "not found" errors specifically.
-    - In the handler, call `GetRecipeByHash`, handle errors (return 404 if not found), and return the full recipe details as JSON.
+### 4.2: Backend - Get Single Recipe Endpoint (`GET /api/recipes/:hash`) ✅
+    - Define the `GET /api/recipes/:hash` route and handler (`handleGetRecipeByHash`). ✅
+    - Get the `hash` parameter from the URL. ✅
+    - In the `database` package, create `GetRecipeByHash(hash string) (models.Recipe, error)`. Implement the SQL query `SELECT * FROM recipes WHERE content_hash = $1;`. Handle "not found" errors specifically. ✅
+    - In the handler, call `GetRecipeByHash`, handle errors (return 404 if not found), and return the full recipe details as JSON. ✅
 
 ### 4.3: Frontend - Home Page Recipe List ✅
     - Create the `HomePage` component. ✅
