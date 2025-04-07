@@ -26,6 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ethers } from 'ethers';
 
 const CreateRecipePage = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const CreateRecipePage = () => {
   const { isConnected, account } = useWallet();
   const { mintRecipe } = useContract();
   const [mintOnBlockchain, setMintOnBlockchain] = useState(false);
-  
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -72,7 +73,7 @@ const CreateRecipePage = () => {
 
   const handleRemoveItem = (index: number, arrayName: 'ingredients' | 'steps' | 'tags') => {
     if (form[arrayName].length <= 1) return;
-    
+
     setForm((prev) => {
       const newArray = [...prev[arrayName]];
       newArray.splice(index, 1);
@@ -82,7 +83,16 @@ const CreateRecipePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!isConnected || !account) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to create a recipe.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!form.title.trim()) {
       toast({
         title: "Missing title",
@@ -91,7 +101,7 @@ const CreateRecipePage = () => {
       });
       return;
     }
-    
+
     if (!form.creatorName.trim()) {
       toast({
         title: "Missing creator name",
@@ -100,11 +110,11 @@ const CreateRecipePage = () => {
       });
       return;
     }
-    
+
     const ingredients = form.ingredients.filter(i => i.trim());
     const steps = form.steps.filter(s => s.trim());
     const tags = form.tags.filter(t => t.trim());
-    
+
     if (ingredients.length === 0) {
       toast({
         title: "Missing ingredients",
@@ -113,7 +123,7 @@ const CreateRecipePage = () => {
       });
       return;
     }
-    
+
     if (steps.length === 0) {
       toast({
         title: "Missing steps",
@@ -122,58 +132,62 @@ const CreateRecipePage = () => {
       });
       return;
     }
-    
+
+    const contentToHash = ingredients.join('\n') + '\n' + steps.join('\n');
+
+    const contentHash = ethers.sha256(ethers.toUtf8Bytes(contentToHash));
+
     setIsSubmitting(true);
-    
+
     try {
-      const recipeData: Omit<Recipe, 'id' | 'createdAt'> = {
-        title: form.title,
-        description: form.description,
-        ingredients,
-        steps,
-        creator: {
-          name: form.creatorName,
-          id: 'user-' + Date.now()
-        },
+      const recipePayload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        ingredients: ingredients,
+        steps: steps,
+        creatorAddress: account,
+        contentHash: contentHash,
+
+        creatorName: form.creatorName.trim(),
         imageUrl: form.imageUrl || undefined,
         tags: tags.length > 0 ? tags : ['Uncategorized'],
         preparationTime: form.preparationTime ? parseInt(form.preparationTime) : undefined,
         cookingTime: form.cookingTime ? parseInt(form.cookingTime) : undefined,
         servings: form.servings ? parseInt(form.servings) : undefined
       };
-      
-      const response = await addRecipe(recipeData);
-      
+
+      const response = await addRecipe(recipePayload as any);
+
       let tokenId = null;
       let txHash = null;
-      
-      if (mintOnBlockchain && isConnected) {
+
+      if (mintOnBlockchain) {
         try {
           const mintResult = await mintRecipe(form.title, form.description);
           if (mintResult) {
             tokenId = mintResult.tokenId;
             txHash = mintResult.txHash;
-            
+
             toast({
               title: "Recipe minted on blockchain",
-              description: `Your recipe has been minted as an NFT with token ID: ${tokenId.substring(0, 8)}...`,
+              description: `NFT minted with token ID: ${tokenId.substring(0, 8)}...`,
             });
           }
         } catch (error) {
           console.error('Error minting recipe on blockchain:', error);
           toast({
             title: "Blockchain minting failed",
-            description: "The recipe was created but couldn't be minted on the blockchain.",
+            description: "The recipe was saved, but blockchain minting failed.",
             variant: "destructive"
           });
         }
       }
-      
+
       toast({
-        title: "Recipe created",
-        description: "Your recipe has been successfully created",
+        title: "Recipe submitted",
+        description: "Your recipe has been submitted successfully",
       });
-      
+
       navigate(`/recipe/${response.id}`);
     } catch (error) {
       console.error('Error creating recipe:', error);
@@ -212,7 +226,7 @@ const CreateRecipePage = () => {
 
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Create a New Recipe</h1>
-        
+
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="space-y-4">
             <div>
@@ -225,7 +239,7 @@ const CreateRecipePage = () => {
                 placeholder="e.g., Homemade Chocolate Chip Cookies"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -237,7 +251,7 @@ const CreateRecipePage = () => {
                 rows={3}
               />
             </div>
-            
+
             <div>
               <Label htmlFor="imageUrl">Image URL (optional)</Label>
               <Input
@@ -261,7 +275,7 @@ const CreateRecipePage = () => {
               )}
             </div>
           </div>
-          
+
           <div>
             <Label>Tags</Label>
             <div className="space-y-2">
@@ -295,7 +309,7 @@ const CreateRecipePage = () => {
               </Button>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="preparationTime">Prep Time (minutes)</Label>
@@ -309,7 +323,7 @@ const CreateRecipePage = () => {
                 placeholder="e.g., 15"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="cookingTime">Cook Time (minutes)</Label>
               <Input
@@ -322,7 +336,7 @@ const CreateRecipePage = () => {
                 placeholder="e.g., 25"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="servings">Servings</Label>
               <Input
@@ -336,7 +350,7 @@ const CreateRecipePage = () => {
               />
             </div>
           </div>
-          
+
           <div>
             <Label>Ingredients</Label>
             <div className="space-y-2">
@@ -370,7 +384,7 @@ const CreateRecipePage = () => {
               </Button>
             </div>
           </div>
-          
+
           <div>
             <Label>Instructions</Label>
             <div className="space-y-2">
@@ -413,7 +427,7 @@ const CreateRecipePage = () => {
               </Button>
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="creatorName">Your Name</Label>
             <Input
@@ -424,7 +438,7 @@ const CreateRecipePage = () => {
               placeholder="Enter your name"
             />
           </div>
-          
+
           <div className="border p-4 rounded-md bg-muted/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -434,13 +448,13 @@ const CreateRecipePage = () => {
                   <p className="text-sm text-muted-foreground">Mint this recipe as an NFT on the blockchain</p>
                 </div>
               </div>
-              
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2">
-                      <Switch 
-                        id="mint-blockchain" 
+                      <Switch
+                        id="mint-blockchain"
                         checked={mintOnBlockchain}
                         onCheckedChange={setMintOnBlockchain}
                         disabled={!isConnected}
@@ -448,20 +462,20 @@ const CreateRecipePage = () => {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {isConnected 
-                      ? "Register your recipe ownership on the blockchain" 
+                    {isConnected
+                      ? "Register your recipe ownership on the blockchain"
                       : "Connect your wallet to enable blockchain registration"}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
-            
+
             {!isConnected && (
               <p className="mt-2 text-sm text-amber-600">
                 You need to connect your wallet to register recipes on the blockchain.
               </p>
             )}
-            
+
             {mintOnBlockchain && isConnected && (
               <div className="mt-2 text-sm bg-background/50 p-2 rounded">
                 <p>
@@ -471,18 +485,18 @@ const CreateRecipePage = () => {
               </div>
             )}
           </div>
-          
+
           <div className="flex justify-end space-x-4 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate('/')}
-              disabled={isSubmitting}
+              disabled={!isConnected || isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Recipe'}
+            <Button type="submit" disabled={!isConnected || isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Recipe'}
             </Button>
           </div>
         </form>

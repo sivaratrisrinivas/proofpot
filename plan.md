@@ -124,13 +124,13 @@ This document breaks down the features required for the proofPot application int
         - Concatenate the `ingredients` and `steps` state variables into a single string. ✅
         - Use `ethers.utils.sha256(ethers.utils.toUtf8Bytes(content))` to calculate the SHA-256 hash. ✅
 
-### 3.3: Frontend - API Call for Upload
+### 3.3: Frontend - API Call for Upload ✅
     - Create an API service/hook for interacting with the backend. ✅
     - In the `RecipeForm` submission handler: ✅
         - Get the connected user's address from the wallet state. ✅
         - Construct the request body: { title, ingredients, steps, creatorAddress, contentHash }. ✅
-        - Make a `POST` request to the backend (`/api/recipes`) using `fetch` or `axios`.
-        - Handle the response: show success/error messages to the user (e.g., using a toast library). Redirect to home or the new recipe page on success.
+        - Make a `POST` request to the backend (`/api/recipes`) using `fetch` or `axios`. ✅
+        - Handle the response: show success/error messages to the user (e.g., using a toast library). Redirect to home or the new recipe page on success. ✅
 
 ### 3.4: Backend - Recipe Upload Endpoint (`POST /api/recipes`)
     - In `main.go`, define the `POST /api/recipes` route and link it to a handler function (e.g., `handleCreateRecipe`).

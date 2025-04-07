@@ -1,8 +1,8 @@
-
 import { Recipe } from '@/types/recipe';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid'; // No longer needed for mock
 
-// Mock recipes data
+// Keep mock data for now if getRecipes/getRecipeById still use it
+// Can be removed later when backend endpoints for GET are implemented
 const mockRecipes: Recipe[] = [
   {
     id: '1',
@@ -109,7 +109,27 @@ const mockRecipes: Recipe[] = [
   }
 ];
 
-// Service functions
+// --- Define the structure for the data sent TO the backend API --- 
+interface RecipeApiPayload {
+  title: string;
+  description: string; // Assuming description will be handled by backend
+  ingredients: string[];
+  steps: string[];
+  creatorAddress: string; // Matches Go struct json tag and frontend payload
+  contentHash: string;    // Matches Go struct json tag and frontend payload
+  // Add other optional fields if backend API supports them & they are in frontend payload
+  // e.g., imageUrl?: string; tags?: string[]; preparationTime?: number; etc.
+}
+
+// --- Define the expected structure of the data received FROM the backend API --- 
+// Assuming the backend returns the full Recipe object after creation, including DB-generated ID
+interface RecipeApiResponse extends Recipe {
+  // id should be populated by backend
+}
+
+// --- Service functions --- 
+
+// getRecipes and getRecipeById still use mock data for now
 export const getRecipes = (): Promise<Recipe[]> => {
   return Promise.resolve(mockRecipes);
 };
@@ -119,15 +139,51 @@ export const getRecipeById = (id: string): Promise<Recipe | undefined> => {
   return Promise.resolve(recipe);
 };
 
-export const addRecipe = (recipe: Omit<Recipe, 'id' | 'createdAt'>): Promise<Recipe> => {
-  const newRecipe: Recipe = {
-    ...recipe,
-    id: uuidv4(),
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  
-  // In a real app, we would save to a database
-  mockRecipes.push(newRecipe);
-  
-  return Promise.resolve(newRecipe);
+// --- Updated addRecipe function --- 
+export const addRecipe = async (payload: RecipeApiPayload): Promise<RecipeApiResponse> => {
+  // Define your backend API endpoint
+  // If your backend runs on a different port (e.g., 8080) and you haven't set up a proxy in Vite,
+  // you might need the full URL: const API_ENDPOINT = 'http://localhost:8080/api/recipes';
+  const API_ENDPOINT = '/api/recipes';
+
+  console.log("Sending recipe payload to backend:", payload); // Log payload for debugging
+
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      // Attempt to get more specific error message from backend response body
+      let errorMsg = `HTTP error ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        // Use a more specific error field if backend provides one, e.g., errorData.error
+        errorMsg = errorData.message || errorMsg;
+      } catch (e) {
+        // Ignore if response body isn't JSON
+      }
+      console.error("Backend responded with error:", errorMsg);
+      throw new Error(errorMsg); // Throw error to be caught by the calling component
+    }
+
+    // Assuming the backend returns the newly created recipe object (including id, createdAt)
+    const createdRecipe: RecipeApiResponse = await response.json();
+    console.log("Received created recipe from backend:", createdRecipe);
+    return createdRecipe;
+
+  } catch (error) {
+    console.error("Error calling addRecipe API:", error);
+    // Re-throw the error so the component can display a message
+    // Ensure the error object is an instance of Error
+    if (error instanceof Error) {
+      throw error;
+    }
+    // If it's not an Error instance, wrap it
+    throw new Error(String(error) || "An unknown error occurred while adding the recipe.");
+  }
 };
