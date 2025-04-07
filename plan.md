@@ -195,31 +195,31 @@ This document breaks down the features required for the proofPot application int
 
 ## Phase 5: Crypto Tipping Feature
 
-### 5.1: Frontend - Tip Button & Input ✅
-    - In the `RecipeDetailPage` component: ✅
-        - Add a "Tip Creator" button near the creator's address. ✅
-        - Add an input field (type="number", step="0.01") for the user to enter the tip amount in ETH. Use `useState` to manage its value. ✅
-        - Disable the button and input if the current user's wallet is not connected OR if the connected user *is* the creator. ✅
+### 5.1: Frontend - Tip Button & Input
+    - In the `RecipeDetailPage` component:
+        - Add a "Tip Creator" button near the creator's address.
+        - Add an input field (type="number", step="0.01") for the user to enter the tip amount in ETH. Use `useState` to manage its value.
+        - Disable the button and input if the current user's wallet is not connected OR if the connected user *is* the creator.
 
-### 5.2: Frontend - Tipping Logic ✅
-    - Add an `onClick` handler to the "Tip Creator" button. ✅
-    - Inside the handler: ✅
-        - Get the `signer` object from the wallet state. If no signer, return/show error. ✅
-        - Get the creator's address from the recipe data. ✅
-        - Get the tip amount from the input state. Validate it's a positive number. ✅
-        - Convert the tip amount (ETH string) to Wei using `ethers.utils.parseEther()`. ✅
-        - Construct the transaction object: `{ to: creatorAddress, value: tipAmountInWei }`. ✅
-        - Call `signer.sendTransaction(txObject)`. ✅
-        - Wrap the call in a try/catch block to handle errors (user rejection, insufficient funds, etc.). ✅
-        - Provide user feedback: show a loading indicator while sending, display success message with transaction hash link (e.g., to Etherscan) on success, show error message on failure. ✅
+### 5.2: Frontend - Tipping Logic
+    - Add an `onClick` handler to the "Tip Creator" button.
+    - Inside the handler:
+        - Get the `signer` object from the wallet state. If no signer, return/show error.
+        - Get the creator's address from the recipe data.
+        - Get the tip amount from the input state. Validate it's a positive number.
+        - Convert the tip amount (ETH string) to Wei using `ethers.utils.parseEther()`.
+        - Construct the transaction object: `{ to: creatorAddress, value: tipAmountInWei }`.
+        - Call `signer.sendTransaction(txObject)`.
+        - Wrap the call in a try/catch block to handle errors (user rejection, insufficient funds, etc.).
+        - Provide user feedback: show a loading indicator while sending, display success message with transaction hash link (e.g., to Etherscan) on success, show error message on failure.
 
 ## Phase 6: Refinements & Deployment
 
-### 6.1: Styling & UI Polish
-    - Apply Tailwind CSS classes consistently across all components for a clean UI.
-    - Ensure responsiveness on different screen sizes.
-    - Add loading indicators where appropriate (API calls, transaction sending).
-    - Improve error handling feedback.
+### 6.1: Styling & UI Polish ✅
+    - Apply Tailwind CSS classes consistently across all components for a clean UI. ✅ (Existing UI looks good)
+    - Ensure responsiveness on different screen sizes. (Note: Needs testing, but framework likely handles basics)
+    - Add loading indicators where appropriate (API calls, transaction sending). ✅ (Skeleton loaders implemented)
+    - Improve error handling feedback. ✅ (Added toasts/messages for API errors)
 
 ### 6.2: Backend Configuration & Environment Variables
     - Ensure all sensitive information (DB connection string, JWT secret, RPC URLs, private keys, contract addresses) is loaded from environment variables, not hardcoded.

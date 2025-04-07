@@ -1,17 +1,15 @@
-
-import { Recipe } from '@/types/recipe';
+import { RecipeListItem } from '@/types/recipe';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface RecipeCardProps {
-  recipe: Recipe;
+  recipe: RecipeListItem;
 }
 
 const RecipeCard = ({ recipe }: RecipeCardProps) => {
   return (
-    <Link to={`/recipe/${recipe.id}`}>
+    <Link to={`/recipes/${recipe.contentHash}`}>
       <Card className="overflow-hidden h-full hover:shadow-lg transition-shadow duration-300">
         <div className="relative h-48 overflow-hidden">
           {recipe.imageUrl ? (
@@ -27,36 +25,27 @@ const RecipeCard = ({ recipe }: RecipeCardProps) => {
           )}
         </div>
 
-        <div className="p-4">
-          <div className="flex flex-wrap gap-2 mb-2">
-            {recipe.tags.slice(0, 3).map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+        <div className="p-4 flex flex-col h-full">
+          {recipe.tags && recipe.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {recipe.tags.slice(0, 3).map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           <h3 className="text-lg font-semibold line-clamp-2 mb-2">{recipe.title}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {recipe.description}
-          </p>
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground mt-auto">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{(recipe.preparationTime || 0) + (recipe.cookingTime || 0)} min</span>
-            </div>
+          {recipe.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-3 flex-grow">
+              {recipe.description}
+            </p>
+          )}
 
-            {recipe.servings && (
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span>{recipe.servings}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 pt-3 border-t text-xs">
-            <p>By {recipe.creator.name}</p>
+          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+            <p className="truncate">By {recipe.creatorAddress}</p>
           </div>
         </div>
       </Card>
