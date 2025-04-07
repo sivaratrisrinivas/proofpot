@@ -62,3 +62,17 @@ func HandleCreateRecipe(c *gin.Context) {
 	// Respond 201 Created with the full recipe data (including the new ID)
 	c.JSON(http.StatusCreated, newRecipe)
 }
+
+// handleGetRecipes handles the GET request to retrieve all recipes.
+func HandleGetRecipes(c *gin.Context) {
+	recipes, err := database.GetAllRecipes()
+	if err != nil {
+		log.Printf("Error retrieving recipes from database: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error retrieving recipes"})
+		return
+	}
+
+	// Return 200 OK with the list of recipes
+	// If no recipes exist, this will correctly return an empty list `[]`
+	c.JSON(http.StatusOK, recipes)
+}

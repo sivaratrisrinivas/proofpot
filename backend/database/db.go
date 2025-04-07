@@ -84,6 +84,33 @@ func InsertRecipe(recipe models.Recipe) (int, error) {
 	return id, nil
 }
 
+// GetAllRecipes retrieves a list of all recipes with selected fields for display.
+func GetAllRecipes() ([]models.RecipeListItem, error) {
+	query := `SELECT id, title, creator_address, content_hash, created_at FROM recipes ORDER BY created_at DESC`
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying recipes: %w", err)
+	}
+	defer rows.Close()
+
+	var recipes []models.RecipeListItem
+	for rows.Next() {
+		var recipe models.RecipeListItem
+		if err := rows.Scan(&recipe.ID, &recipe.Title, &recipe.CreatorAddress, &recipe.ContentHash, &recipe.CreatedAt); err != nil {
+			// Log the error but continue processing other rows if possible
+			log.Printf("Error scanning recipe row: %v", err)
+			continue // Or return the error immediately: return nil, fmt.Errorf("error scanning recipe row: %w", err)
+		}
+		recipes = append(recipes, recipe)
+	}
+
+	if err = rows.Err(); err != nil {
+		// This catches errors that happened during iteration
+		return nil, fmt.Errorf("error iterating recipe rows: %w", err)
+	}
+
+	return recipes, nil
+}
+
 // --- TODO: Add functions for GET endpoints here later (Step 4.1, 4.2) ---
-// GetAllRecipes() ([]models.Recipe, error)
 // GetRecipeByHash(hash string) (models.Recipe, error)

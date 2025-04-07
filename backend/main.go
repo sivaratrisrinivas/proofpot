@@ -56,7 +56,7 @@ func main() {
 		// Recipe Routes
 		api.POST("/recipes", handlers.HandleCreateRecipe)
 		// --- TODO: Add GET routes here later (Step 4.1, 4.2) ---
-		// api.GET("/recipes", handlers.HandleGetRecipes)
+		api.GET("/recipes", handlers.HandleGetRecipes)
 		// api.GET("/recipes/:hash", handlers.HandleGetRecipeByHash)
 	}
 

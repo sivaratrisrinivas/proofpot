@@ -167,10 +167,10 @@ This document breaks down the features required for the proofPot application int
 
 ## Phase 4: Recipe Display Feature
 
-### 4.1: Backend - Get All Recipes Endpoint (`GET /api/recipes`)
-    - Define the `GET /api/recipes` route and handler (`handleGetRecipes`).
-    - In the `database` package, create `GetAllRecipes() ([]models.Recipe, error)`. Implement the SQL query `SELECT id, title, creator_address, content_hash, created_at FROM recipes ORDER BY created_at DESC;` (Note: Exclude large text fields for list view).
-    - In the handler, call `GetAllRecipes`, handle errors, and return the list as JSON.
+### 4.1: Backend - Get All Recipes Endpoint (`GET /api/recipes`) ✅
+    - Define the `GET /api/recipes` route and handler (`handleGetRecipes`). ✅
+    - In the `database` package, create `GetAllRecipes() ([]models.RecipeListItem, error)`. Implement the SQL query `SELECT id, title, creator_address, content_hash, created_at FROM recipes ORDER BY created_at DESC;` (Note: Exclude large text fields for list view). ✅
+    - In the handler, call `GetAllRecipes`, handle errors, and return the list as JSON. ✅
 
 ### 4.2: Backend - Get Single Recipe Endpoint (`GET /api/recipes/:hash`)
     - Define the `GET /api/recipes/:hash` route and handler (`handleGetRecipeByHash`).
