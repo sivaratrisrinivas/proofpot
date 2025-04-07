@@ -39,3 +39,23 @@ func CloseDB() {
 		fmt.Println("Database connection closed.")
 	}
 }
+
+// CheckHashExists checks if a recipe with the given content hash already exists in the database.
+func CheckHashExists(hash string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM recipes WHERE content_hash = $1)`
+	err := DB.QueryRow(query, hash).Scan(&exists)
+	if err != nil {
+		// It's important to distinguish between "no rows" (which shouldn't happen with SELECT EXISTS)
+		// and actual database errors.
+		if err == sql.ErrNoRows {
+			// This case should ideally not be reached with SELECT EXISTS, but handle defensively
+			return false, nil
+		}
+		// Return the actual database error for other issues
+		return false, fmt.Errorf("error checking hash existence: %w", err)
+	}
+	return exists, nil
+}
+
+// --- TODO: Add InsertRecipe function here later (Step 3.6) ---

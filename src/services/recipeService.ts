@@ -109,16 +109,30 @@ const mockRecipes: Recipe[] = [
   }
 ];
 
-// --- Define the structure for the data sent TO the backend API --- 
+// Define structure received from the component
+interface RecipeComponentPayload {
+  title: string;
+  description: string;
+  ingredients: string[]; // Array from component
+  steps: string[];       // Array from component
+  creatorAddress: string;
+  contentHash: string;
+  // Include other optional fields from component form state if needed
+  // creatorName?: string;
+  // imageUrl?: string;
+  // tags?: string[];
+  // etc.
+}
+
+// Define structure sent TO the backend (matching Go struct)
 interface RecipeApiPayload {
   title: string;
-  description: string; // Assuming description will be handled by backend
-  ingredients: string[];
-  steps: string[];
-  creatorAddress: string; // Matches Go struct json tag and frontend payload
-  contentHash: string;    // Matches Go struct json tag and frontend payload
-  // Add other optional fields if backend API supports them & they are in frontend payload
-  // e.g., imageUrl?: string; tags?: string[]; preparationTime?: number; etc.
+  description: string;
+  ingredients: string; // Joined string for backend
+  steps: string;       // Joined string for backend
+  creatorAddress: string;
+  contentHash: string;
+  // Omit other fields not present in the Go `models.Recipe` struct
 }
 
 // --- Define the expected structure of the data received FROM the backend API --- 
@@ -140,13 +154,23 @@ export const getRecipeById = (id: string): Promise<Recipe | undefined> => {
 };
 
 // --- Updated addRecipe function --- 
-export const addRecipe = async (payload: RecipeApiPayload): Promise<RecipeApiResponse> => {
-  // Define your backend API endpoint
-  // If your backend runs on a different port (e.g., 8080) and you haven't set up a proxy in Vite,
-  // you might need the full URL: const API_ENDPOINT = 'http://localhost:8080/api/recipes';
+// Now accepts the payload from the component and transforms it for the API
+export const addRecipe = async (componentPayload: RecipeComponentPayload): Promise<RecipeApiResponse> => {
   const API_ENDPOINT = '/api/recipes';
 
-  console.log("Sending recipe payload to backend:", payload); // Log payload for debugging
+  // Transform the payload: Join arrays into strings
+  // Using newline as a simple delimiter. Consider a more robust method 
+  // (like JSON stringifying the array) if newlines might be in the data itself.
+  const apiPayload: RecipeApiPayload = {
+    title: componentPayload.title,
+    description: componentPayload.description,
+    ingredients: componentPayload.ingredients.join('\n'), // Join array to string
+    steps: componentPayload.steps.join('\n'),             // Join array to string
+    creatorAddress: componentPayload.creatorAddress,
+    contentHash: componentPayload.contentHash,
+  };
+
+  console.log("Transformed payload for backend:", apiPayload); // Log transformed payload
 
   try {
     const response = await fetch(API_ENDPOINT, {
@@ -154,36 +178,30 @@ export const addRecipe = async (payload: RecipeApiPayload): Promise<RecipeApiRes
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(apiPayload), // Send the transformed payload
     });
 
     if (!response.ok) {
-      // Attempt to get more specific error message from backend response body
       let errorMsg = `HTTP error ${response.status}: ${response.statusText}`;
       try {
         const errorData = await response.json();
-        // Use a more specific error field if backend provides one, e.g., errorData.error
         errorMsg = errorData.message || errorMsg;
       } catch (e) {
-        // Ignore if response body isn't JSON
+        /* ignore */
       }
       console.error("Backend responded with error:", errorMsg);
-      throw new Error(errorMsg); // Throw error to be caught by the calling component
+      throw new Error(errorMsg);
     }
 
-    // Assuming the backend returns the newly created recipe object (including id, createdAt)
     const createdRecipe: RecipeApiResponse = await response.json();
     console.log("Received created recipe from backend:", createdRecipe);
     return createdRecipe;
 
   } catch (error) {
     console.error("Error calling addRecipe API:", error);
-    // Re-throw the error so the component can display a message
-    // Ensure the error object is an instance of Error
     if (error instanceof Error) {
       throw error;
     }
-    // If it's not an Error instance, wrap it
     throw new Error(String(error) || "An unknown error occurred while adding the recipe.");
   }
 };

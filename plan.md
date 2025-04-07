@@ -132,16 +132,16 @@ This document breaks down the features required for the proofPot application int
         - Make a `POST` request to the backend (`/api/recipes`) using `fetch` or `axios`. ✅
         - Handle the response: show success/error messages to the user (e.g., using a toast library). Redirect to home or the new recipe page on success. ✅
 
-### 3.4: Backend - Recipe Upload Endpoint (`POST /api/recipes`)
-    - In `main.go`, define the `POST /api/recipes` route and link it to a handler function (e.g., `handleCreateRecipe`).
+### 3.4: Backend - Recipe Upload Endpoint (`POST /api/recipes`) ✅
+    - In `main.go`, define the `POST /api/recipes` route and link it to a handler function (e.g., `handleCreateRecipe`). ✅
     - In the handler:
-        - Bind the incoming JSON request body to the `Recipe` struct. Handle binding errors.
-        - Perform basic validation (e.g., ensure required fields are not empty).
+        - Bind the incoming JSON request body to the `Recipe` struct. Handle binding errors. ✅
+        - Perform basic validation (e.g., ensure required fields are not empty). ✅
 
-### 3.5: Backend - Duplicate Hash Check
-    - In the `database` package, create a function `CheckHashExists(hash string) (bool, error)`.
-    - Implement the SQL query `SELECT EXISTS(SELECT 1 FROM recipes WHERE content_hash = $1)`.
-    - In the `handleCreateRecipe` handler, call `CheckHashExists`. If it returns true, respond with a 409 Conflict error ("Recipe already exists").
+### 3.5: Backend - Duplicate Hash Check ✅
+    - In the `database` package, create a function `CheckHashExists(hash string) (bool, error)`. ✅
+    - Implement the SQL query `SELECT EXISTS(SELECT 1 FROM recipes WHERE content_hash = $1)`. ✅
+    - In the `handleCreateRecipe` handler, call `CheckHashExists`. If it returns true, respond with a 409 Conflict error ("Recipe already exists"). ✅
 
 ### 3.6: Backend - Store Recipe in Database
     - In the `database` package, create a function `InsertRecipe(recipe models.Recipe) (int, error)` that inserts the recipe data and returns the new recipe ID.

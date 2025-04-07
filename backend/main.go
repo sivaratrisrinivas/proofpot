@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/signal"
 	"proofpot-backend/database" // Import the database package
+	"proofpot-backend/handlers" // Import the handlers package
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors" // Import CORS middleware
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -27,13 +29,30 @@ func main() {
 
 	r := gin.Default()
 
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
+	// --- CORS Middleware ---
+	// Allow requests from your frontend development server (e.g., localhost:5173)
+	// Adjust origin as needed for deployment
+	config := cors.DefaultConfig()
+	// config.AllowOrigins = []string{"http://localhost:5173"}
+	config.AllowAllOrigins = true // Allow all for now, restrict in production
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"} // Add other headers if needed
+	r.Use(cors.New(config))
 
-	// --- Add Recipe routes here later ---
+	// --- API Routes ---
+	api := r.Group("/api")
+	{
+		// Health Check
+		api.GET("/ping", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "pong"})
+		})
+
+		// Recipe Routes
+		api.POST("/recipes", handlers.HandleCreateRecipe)
+		// --- TODO: Add GET routes here later (Step 4.1, 4.2) ---
+		// api.GET("/recipes", handlers.HandleGetRecipes)
+		// api.GET("/recipes/:hash", handlers.HandleGetRecipeByHash)
+	}
 
 	// Run the server in a goroutine so it doesn't block
 	srv := &http.Server{
