@@ -35,15 +35,21 @@ func HandleCreateRecipe(c *gin.Context) {
 	}
 	// --- End Step 3.5 ---
 
-	// --- TODO: Implement Step 3.6: Store Recipe in Database ---
-	// newRecipe.ID, err = database.InsertRecipe(newRecipe)
-	// if err != nil { ... handle db error ... }
+	// --- Step 3.6: Store Recipe in Database ---
+	insertedID, err := database.InsertRecipe(newRecipe)
+	if err != nil {
+		log.Printf("Error inserting recipe into database: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error saving recipe"})
+		return
+	}
+	newRecipe.ID = insertedID // Set the ID from the database result
+	// Note: CreatedAt is automatically set by the database default
+	// --- End Step 3.6 ---
 
 	// --- TODO: Implement Step 3.7: Trigger Smart Contract Interaction ---
 	// err = blockchain.RegisterRecipeOnChain(newRecipe.ContentHash)
 	// if err != nil { ... handle contract error, maybe log it ... }
 
-	// If validation and checks pass (and DB insert happens later), respond 201 Created
-	newRecipe.ID = 999 // Placeholder - Will be replaced by DB ID in Step 3.6
+	// Respond 201 Created with the full recipe data (including the new ID)
 	c.JSON(http.StatusCreated, newRecipe)
 }

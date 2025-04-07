@@ -143,9 +143,9 @@ This document breaks down the features required for the proofPot application int
     - Implement the SQL query `SELECT EXISTS(SELECT 1 FROM recipes WHERE content_hash = $1)`. ✅
     - In the `handleCreateRecipe` handler, call `CheckHashExists`. If it returns true, respond with a 409 Conflict error ("Recipe already exists"). ✅
 
-### 3.6: Backend - Store Recipe in Database
-    - In the `database` package, create a function `InsertRecipe(recipe models.Recipe) (int, error)` that inserts the recipe data and returns the new recipe ID.
-    - In the `handleCreateRecipe` handler (if hash doesn't exist), call `InsertRecipe`. Handle potential database errors.
+### 3.6: Backend - Store Recipe in Database ✅
+    - In the `database` package, create a function `InsertRecipe(recipe models.Recipe) (int, error)` that inserts the recipe data and returns the new recipe ID. ✅
+    - In the `handleCreateRecipe` handler (if hash doesn't exist), call `InsertRecipe`. Handle potential database errors. ✅
 
 ### 3.7: Backend - Trigger Smart Contract Interaction
     - Install go-ethereum: `go get github.com/ethereum/go-ethereum`.

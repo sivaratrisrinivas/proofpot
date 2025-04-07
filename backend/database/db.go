@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"proofpot-backend/models"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
@@ -58,4 +59,31 @@ func CheckHashExists(hash string) (bool, error) {
 	return exists, nil
 }
 
-// --- TODO: Add InsertRecipe function here later (Step 3.6) ---
+// InsertRecipe inserts a new recipe into the database and returns the generated ID.
+// Note: We assume description is handled appropriately (e.g., added to struct/db later or ignored).
+func InsertRecipe(recipe models.Recipe) (int, error) {
+	var id int
+	query := `
+		INSERT INTO recipes (title, ingredients, steps, creator_address, content_hash)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+	`
+	// Execute the query, scanning the returned ID into the id variable.
+	err := DB.QueryRow(query,
+		recipe.Title,
+		recipe.Ingredients, // Assumes this is the joined string
+		recipe.Steps,       // Assumes this is the joined string
+		recipe.CreatorAddress,
+		recipe.ContentHash,
+	).Scan(&id)
+
+	if err != nil {
+		return 0, fmt.Errorf("error inserting recipe: %w", err)
+	}
+
+	return id, nil
+}
+
+// --- TODO: Add functions for GET endpoints here later (Step 4.1, 4.2) ---
+// GetAllRecipes() ([]models.Recipe, error)
+// GetRecipeByHash(hash string) (models.Recipe, error)
