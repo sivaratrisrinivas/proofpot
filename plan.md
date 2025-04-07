@@ -221,9 +221,9 @@ This document breaks down the features required for the proofPot application int
     - Add loading indicators where appropriate (API calls, transaction sending). ✅ (Skeleton loaders implemented)
     - Improve error handling feedback. ✅ (Added toasts/messages for API errors)
 
-### 6.2: Backend Configuration & Environment Variables
-    - Ensure all sensitive information (DB connection string, JWT secret, RPC URLs, private keys, contract addresses) is loaded from environment variables, not hardcoded.
-    - Use a `.env` file for local development.
+### 6.2: Backend Configuration & Environment Variables ✅
+    - Ensure all sensitive information (DB connection string, JWT secret, RPC URLs, private keys, contract addresses) is loaded from environment variables, not hardcoded. ✅
+    - Use a `.env` file for local development. ✅
 
 ### 6.3: Frontend Build & Backend Dockerization (Optional)
     - Create a production build of the React app (`npm run build`).
