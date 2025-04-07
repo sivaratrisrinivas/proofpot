@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"proofpot-backend/database" // Import the database package
-	"proofpot-backend/handlers" // Import the handlers package
+	"proofpot-backend/blockchain" // Import the blockchain package
+	"proofpot-backend/database"   // Import the database package
+	"proofpot-backend/handlers"   // Import the handlers package
 	"syscall"
 	"time"
 
@@ -26,6 +27,11 @@ func main() {
 	database.InitDB()
 	// Ensure DB connection is closed when main function exits
 	defer database.CloseDB()
+
+	// Initialize Blockchain Connection
+	if err := blockchain.InitBlockchain(); err != nil {
+		log.Fatalf("Failed to initialize blockchain connection: %v", err)
+	}
 
 	r := gin.Default()
 

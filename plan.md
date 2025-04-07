@@ -147,22 +147,23 @@ This document breaks down the features required for the proofPot application int
     - In the `database` package, create a function `InsertRecipe(recipe models.Recipe) (int, error)` that inserts the recipe data and returns the new recipe ID. ✅
     - In the `handleCreateRecipe` handler (if hash doesn't exist), call `InsertRecipe`. Handle potential database errors. ✅
 
-### 3.7: Backend - Trigger Smart Contract Interaction
-    - Install go-ethereum: `go get github.com/ethereum/go-ethereum`.
-    - Create a `blockchain` package.
-    - Implement logic to:
-        - Load the `RecipeRegistry` ABI (can be stored as a const string).
-        - Load the deployed contract address (from env var).
-        - Load the backend wallet's private key (from env var).
-        - Connect to the Sepolia RPC node (URL from env var).
-        - Create an authenticated transaction signer using the private key and chain ID.
-        - Create an instance of the contract using the address, ABI, and client/signer.
-    - In the `handleCreateRecipe` handler (after successful DB insert):
-        - Convert the recipe `contentHash` string (hex) to `[32]byte`.
-        - Call the `addRecipe` method on the contract instance, passing the hash bytes.
-        - Wait for the transaction receipt (optional, but good for confirming). Handle transaction errors (e.g., out of gas, reverted). Log the transaction hash.
-        - If the contract interaction fails, potentially consider how to handle the already inserted DB record (e.g., mark as pending, implement retry, or log for manual intervention - simplest for MVP is to just log the error).
-    - Respond to the frontend with 201 Created and the newly created recipe data (or just its ID).
+### 3.7: Backend - Trigger Smart Contract Interaction ✅
+    - Install go-ethereum: `go get github.com/ethereum/go-ethereum`. ✅
+    - Create a `blockchain` package. ✅
+    - Implement logic to: ✅
+        - Load the `RecipeRegistry` ABI (can be stored as a const string). ✅
+        - Load the deployed contract address (from env var). ✅
+        - Load the backend wallet's private key (from env var). ✅
+        - Connect to the Sepolia RPC node (URL from env var). ✅
+        - Create an authenticated transaction signer using the private key and chain ID. ✅
+        - Create an instance of the contract using the address, ABI, and client/signer. ✅ (Implicitly done via packing/sending)
+    - In the `handleCreateRecipe` handler (after successful DB insert): ✅
+        - Convert the recipe `contentHash` string (hex) to `[32]byte`. ✅
+        - Call the `addRecipe` method on the contract instance, passing the hash bytes. ✅
+        - Wait for the transaction receipt (optional, but good for confirming). ✅
+        - Handle transaction errors (e.g., out of gas, reverted). Log the transaction hash. ✅
+        - If the contract interaction fails, potentially consider how to handle the already inserted DB record (e.g., mark as pending, implement retry, or log for manual intervention - simplest for MVP is to just log the error). ✅ (Logged for now)
+    - Respond to the frontend with 201 Created and the newly created recipe data (or just its ID). ✅
 
 ## Phase 4: Recipe Display Feature
 

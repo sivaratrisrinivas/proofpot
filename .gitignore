@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node dependencies
 node_modules
 dist
 dist-ssr
@@ -22,3 +23,24 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env*
+!*.env.example
+backend/.env
+backend/.env*
+smart-contract/.env
+smart-contract/.env*
+
+# Backend artifacts (Go)
+backend/proofpot-backend-app # Compiled binary
+backend/proofpot-backend-app.exe # Windows binary
+
+# Smart Contract artifacts (Hardhat)
+smart-contract/artifacts
+smart-contract/cache
+smart-contract/typechain-types
+# smart-contract/node_modules is covered by the root node_modules ignore
+
+
