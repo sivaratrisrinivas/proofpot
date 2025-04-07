@@ -180,10 +180,10 @@ This document breaks down the features required for the proofPot application int
 
 ### 4.3: Frontend - Home Page Recipe List ✅
     - Create the `HomePage` component. ✅
-    - Use `useEffect` and the API service to fetch data from `GET /api/recipes` when the component mounts. Store results in `useState`.
-    - Create `RecipeList` and `RecipeListItem` components. ✅
-    - `RecipeList`: Takes the array of recipes as a prop and maps over it, rendering a `RecipeListItem` for each. ✅
-    - `RecipeListItem`: Displays title and truncated creator address. Make the item clickable, linking to the detail page (e.g., `/recipes/<hash>`). ✅
+    - Use `useEffect` and the API service to fetch data from `GET /api/recipes` when the component mounts. Store results in `useState`. ✅
+    - Create `RecipeList` and `RecipeListItem` components. (Note: Implemented using `HomePage` mapping over data and rendering `RecipeCard` components). ✅
+    - `RecipeList`: Takes the array of recipes as a prop and maps over it, rendering a `RecipeListItem` for each. (Note: Logic within `HomePage`). ✅
+    - `RecipeListItem`: Displays title and truncated creator address. Make the item clickable, linking to the detail page (e.g., `/recipes/<hash>`). (Note: Implemented as `RecipeCard` displaying title and `creator.name`, linking to `/recipe/<id>`). ✅
     - Handle loading and error states during the API call. ✅
 
 ### 4.4: Frontend - Recipe Detail Page ✅
