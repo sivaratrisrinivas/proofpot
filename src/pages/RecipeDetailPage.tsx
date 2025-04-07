@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
+import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -30,9 +30,9 @@ const RecipeDetailPage = () => {
           navigate('/');
           return;
         }
-        
+
         const data = await getRecipeById(id);
-        
+
         if (!data) {
           toast({
             title: "Recipe not found",
@@ -42,7 +42,7 @@ const RecipeDetailPage = () => {
           navigate('/');
           return;
         }
-        
+
         setRecipe(data);
         setIsLoading(false);
       } catch (error) {
@@ -124,7 +124,7 @@ const RecipeDetailPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">{recipe.title}</h1>
-          
+
           <div className="flex flex-wrap gap-2 mb-6">
             {recipe.tags.map((tag) => (
               <Badge key={tag} variant="secondary">
@@ -132,7 +132,7 @@ const RecipeDetailPage = () => {
               </Badge>
             ))}
           </div>
-          
+
           {recipe.imageUrl && (
             <div className="mb-6 rounded-lg overflow-hidden">
               <img
@@ -165,7 +165,7 @@ const RecipeDetailPage = () => {
                 </div>
               </div>
             )}
-            
+
             {recipe.cookingTime && (
               <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center">
                 <p className="text-sm text-muted-foreground mb-1">Cook Time</p>
@@ -175,7 +175,7 @@ const RecipeDetailPage = () => {
                 </div>
               </div>
             )}
-            
+
             {recipe.servings && (
               <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center">
                 <p className="text-sm text-muted-foreground mb-1">Servings</p>

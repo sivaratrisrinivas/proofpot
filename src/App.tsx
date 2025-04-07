@@ -16,7 +16,7 @@ import { useState } from "react";
 const App = () => {
   // Create a new QueryClient instance using useState to ensure proper React lifecycle
   const [queryClient] = useState(() => new QueryClient());
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

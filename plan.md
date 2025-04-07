@@ -188,9 +188,9 @@ This document breaks down the features required for the proofPot application int
 
 ### 4.4: Frontend - Recipe Detail Page ✅
     - Create the `RecipeDetailPage` component. ✅
-    - Get the recipe hash from the URL parameters using `useParams` from `react-router-dom`. ✅
-    - Use `useEffect` to fetch data from `GET /api/recipes/:hash` based on the hash. Store result in `useState`.
-    - Display all recipe details: title, full creator address, ingredients, steps, creation timestamp. ✅
+    - Get the recipe hash from the URL parameters using `useParams` from `react-router-dom`. ✅ (Now using `hash` param)
+    - Use `useEffect` to fetch data from `GET /api/recipes/:hash` based on the hash. Store result in `useState`. ✅ (Now fetching by hash)
+    - Display all recipe details: title, full creator address, ingredients, steps, creation timestamp. ✅ (Now displaying `creatorAddress`)
     - Handle loading state and "Recipe not found" errors. ✅
 
 ## Phase 5: Crypto Tipping Feature
