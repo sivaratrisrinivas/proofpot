@@ -9,6 +9,7 @@ import (
 	"proofpot-backend/blockchain" // Import the blockchain package
 	"proofpot-backend/database"   // Import the database package
 	"proofpot-backend/handlers"   // Import the handlers package
+	"strings"
 	"syscall"
 	"time"
 
@@ -36,13 +37,19 @@ func main() {
 	r := gin.Default()
 
 	// --- CORS Middleware ---
-	// Allow requests from your frontend development server (e.g., localhost:5173)
-	// Adjust origin as needed for deployment
 	config := cors.DefaultConfig()
-	// config.AllowOrigins = []string{"http://localhost:5173"}
-	config.AllowAllOrigins = true // Allow all for now, restrict in production
+
+	allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		// Fallback to default development origin if env var is not set
+		log.Println("CORS_ALLOWED_ORIGINS not set, defaulting to http://localhost:5173")
+		allowedOrigins = "http://localhost:5173"
+	}
+	config.AllowOrigins = strings.Split(allowedOrigins, ",")
+	// config.AllowAllOrigins = true // Replaced with specific origins
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"} // Add other headers if needed
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowCredentials = true // Allow credentials (cookies, auth headers)
 	r.Use(cors.New(config))
 
 	// --- API Routes ---
