@@ -274,15 +274,24 @@ export const addRecipe = async (componentPayload: RecipeComponentPayload): Promi
     console.log("[RecipeService] Received created recipe from backend:", createdRecipeResponse);
 
     // Backend returns specific fields, ensure they match RecipeCreationApiResponse
-    if (!createdRecipeResponse || typeof createdRecipeResponse.id === 'undefined' || typeof createdRecipeResponse.contentHash === 'undefined') {
+    // Check for essential fields returned by the backend
+    if (!createdRecipeResponse || typeof createdRecipeResponse.id === 'undefined' ||
+      typeof createdRecipeResponse.contentHash === 'undefined' ||
+      typeof createdRecipeResponse.title === 'undefined' ||
+      typeof createdRecipeResponse.creatorAddress === 'undefined') {
       console.error("[RecipeService] Unexpected response format from backend after creation:", createdRecipeResponse);
       throw new Error("Unexpected response format after recipe creation.");
     }
 
+    // Construct the return object matching RecipeCreationApiResponse (assuming createdAt is optional or handled elsewhere)
     return {
       id: createdRecipeResponse.id,
       contentHash: createdRecipeResponse.contentHash,
-      // Add other fields if the backend returns them and they are part of RecipeCreationApiResponse
+      title: createdRecipeResponse.title,             // Add title
+      creatorAddress: createdRecipeResponse.creatorAddress, // Add creatorAddress
+      // createdAt is not returned by backend on create, omit it here
+      // Add other fields like imageUrl if they are part of RecipeCreationApiResponse
+      // imageUrl: createdRecipeResponse.imageUrl 
     };
 
   } catch (error) {

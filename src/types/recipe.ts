@@ -35,5 +35,5 @@ export interface RecipeCreationApiResponse {
   title: string;
   creatorAddress: string;
   contentHash: string;
-  createdAt: string;
+  createdAt?: string;
 }
