@@ -197,6 +197,10 @@ export const getRecipes = async (): Promise<RecipeListItem[]> => {
     throw new Error('Failed to fetch recipes');
   }
   const data = await response.json();
+  // Handle cases where backend might return null instead of an empty array
+  if (!data) {
+    return [];
+  }
   // Transform each item using the specific list item transformer
   return data.map(transformBackendRecipeToListItem);
 };
