@@ -1,8 +1,9 @@
 import { Recipe, RecipeListItem, RecipeCreationApiResponse } from '@/types/recipe';
 // import { v4 as uuidv4 } from 'uuid'; // No longer needed for mock
 
-// Base URL for the API
-const API_BASE_URL = '/api'; // Assuming backend runs on the same host/port or proxied
+// Base URL for the API - Use environment variable
+// Fallback to /api for local development if the env var is not set
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // Keep mock data for now if getRecipes/getRecipeById still use it
 // Can be removed later when backend endpoints for GET are implemented
@@ -189,8 +190,10 @@ const transformBackendRecipeToListItem = (backendListItem: any): RecipeListItem 
 
 // Updated getRecipes to fetch from backend and return RecipeListItem[]
 export const getRecipes = async (): Promise<RecipeListItem[]> => {
+  // Use the base URL defined above
   const response = await fetch(`${API_BASE_URL}/recipes`);
   if (!response.ok) {
+    console.error('Fetch error:', response.status, await response.text()); // Log error details
     throw new Error('Failed to fetch recipes');
   }
   const data = await response.json();
@@ -201,8 +204,9 @@ export const getRecipes = async (): Promise<RecipeListItem[]> => {
 // New function to fetch by hash, returns full Recipe
 export const getRecipeByHash = async (hash: string): Promise<Recipe | null> => {
   const normalizedHash = hash.startsWith('0x') ? hash : `0x${hash}`;
-  console.log(`[RecipeService] Fetching recipe by hash: ${normalizedHash}`); // Log hash being fetched
+  console.log(`[RecipeService] Fetching recipe by hash: ${normalizedHash} from ${API_BASE_URL}/recipes/${normalizedHash}`); // Log hash being fetched
   try {
+    // Use the base URL defined above
     const response = await fetch(`${API_BASE_URL}/recipes/${normalizedHash}`);
     console.log(`[RecipeService] Fetch response status for ${normalizedHash}: ${response.status}`); // Log status
 
@@ -210,23 +214,22 @@ export const getRecipeByHash = async (hash: string): Promise<Recipe | null> => {
       return null;
     }
     if (!response.ok) {
-      // Log the error response text for more details
       const errorText = await response.text();
       console.error(`[RecipeService] Error fetching recipe ${normalizedHash}. Status: ${response.status}. Body: ${errorText}`);
       throw new Error(`Failed to fetch recipe with hash ${hash}: ${response.statusText}`);
     }
     const backendRecipe = await response.json();
     console.log(`[RecipeService] Received backend data for ${normalizedHash}:`, backendRecipe); // Log received data
-    // Transform using the full recipe transformer
     return transformBackendRecipeToRecipe(backendRecipe);
   } catch (error) {
     console.error(`[RecipeService] Network or other error fetching recipe ${normalizedHash}:`, error);
-    throw error; // Re-throw the error to be caught by the component
+    throw error;
   }
 };
 
 // Updated addRecipe, returns the explicit creation response structure
 export const addRecipe = async (componentPayload: RecipeComponentPayload): Promise<RecipeCreationApiResponse> => {
+  // Use the base URL defined above
   const API_ENDPOINT = `${API_BASE_URL}/recipes`;
 
   // Ensure imageUrl is included if present in componentPayload
@@ -239,7 +242,7 @@ export const addRecipe = async (componentPayload: RecipeComponentPayload): Promi
     contentHash: componentPayload.contentHash,
     imageUrl: componentPayload.imageUrl, // Add the imageUrl from the component payload
   };
-  console.log("Transformed payload for backend:", apiPayload); // Log the payload being sent
+  console.log(`[RecipeService] Sending POST to ${API_ENDPOINT} with payload:`, apiPayload);
 
   try {
     const response = await fetch(API_ENDPOINT, {
@@ -250,27 +253,40 @@ export const addRecipe = async (componentPayload: RecipeComponentPayload): Promi
       body: JSON.stringify(apiPayload),
     });
 
+    // Log response status regardless of ok status
+    console.log(`[RecipeService] POST response status: ${response.status}`);
+
     if (!response.ok) {
-      let errorMsg = `HTTP error ${response.status}: ${response.statusText}`;
+      const errorText = await response.text();
+      console.error(`[RecipeService] Error creating recipe. Status: ${response.status}. Body: ${errorText}`);
+      // Throw a more specific error message if possible
+      let errorMessage = `Failed to create recipe: ${response.statusText}`;
       try {
-        const errorData = await response.json();
-        errorMsg = errorData.message || errorMsg;
-      } catch (e) { /* ignore */ }
-      console.error("Backend responded with error:", errorMsg);
-      throw new Error(errorMsg);
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error) {
+          errorMessage = errorJson.error;
+        }
+      } catch (e) { /* Ignore if response body is not JSON */ }
+      throw new Error(errorMessage);
     }
 
-    // Parse the explicit JSON response from the backend
-    const createdRecipeResponse: RecipeCreationApiResponse = await response.json();
-    console.log("Received created recipe from backend:", createdRecipeResponse);
-    // No transformation needed here as backend sends exactly what frontend needs for nav
-    return createdRecipeResponse;
+    const createdRecipeResponse = await response.json();
+    console.log("[RecipeService] Received created recipe from backend:", createdRecipeResponse);
+
+    // Backend returns specific fields, ensure they match RecipeCreationApiResponse
+    if (!createdRecipeResponse || typeof createdRecipeResponse.id === 'undefined' || typeof createdRecipeResponse.contentHash === 'undefined') {
+      console.error("[RecipeService] Unexpected response format from backend after creation:", createdRecipeResponse);
+      throw new Error("Unexpected response format after recipe creation.");
+    }
+
+    return {
+      id: createdRecipeResponse.id,
+      contentHash: createdRecipeResponse.contentHash,
+      // Add other fields if the backend returns them and they are part of RecipeCreationApiResponse
+    };
 
   } catch (error) {
-    console.error("Error calling addRecipe API:", error);
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error(String(error) || "An unknown error occurred while adding the recipe.");
+    console.error('[RecipeService] Network or other error creating recipe:', error);
+    throw error; // Re-throw to be handled by the component
   }
 };
