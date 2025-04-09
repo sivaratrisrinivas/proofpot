@@ -57,15 +57,21 @@ func HandleCreateRecipe(c *gin.Context) {
 	}
 	// --- End Step 3.6 ---
 
-	// --- Step 3.7: Trigger Smart Contract Interaction ---
-	err = blockchain.RegisterRecipeOnChain(payload.ContentHash, payload.CreatorAddress)
-	if err != nil {
-		log.Printf("WARNING: Failed to register recipe hash %s on chain after DB insert: %v", payload.ContentHash, err)
-		// Proceed even if blockchain call fails, recipe is in DB
-	}
+	// --- Step 3.7: Trigger Smart Contract Interaction (Async) ---
+	// Launch blockchain registration in a separate goroutine
+	go func(hash, creator string) {
+		log.Printf("Starting background blockchain registration for hash: %s", hash)
+		err := blockchain.RegisterRecipeOnChain(hash, creator)
+		if err != nil {
+			// Log the error, but don't block the main request flow
+			log.Printf("ERROR: Failed background blockchain registration for hash %s: %v", hash, err)
+		} else {
+			log.Printf("Successfully completed background blockchain registration for hash: %s", hash)
+		}
+	}(payload.ContentHash, payload.CreatorAddress) // Pass necessary variables to the goroutine
 	// --- End Step 3.7 ---
 
-	// Respond 201 Created with essential data from payload + ID
+	// Respond 201 Created immediately after DB insert and launching background task
 	c.JSON(http.StatusCreated, gin.H{
 		"id":             insertedID,
 		"title":          payload.Title,
