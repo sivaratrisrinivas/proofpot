@@ -230,15 +230,40 @@ This document breaks down the features required for the proofPot application int
 ### 6.2: Backend Configuration & Environment Variables ✅
     - Ensure all sensitive information (DB connection string, RPC URLs, private keys, contract addresses) is loaded from environment variables, not hardcoded. ✅
     - Use a `.env` file for local development. ✅ (Requires `.env.example`) ✅
+    - Set necessary secrets on deployment platform (Fly.io): ✅
+        - `DATABASE_URL` (via `fly postgres attach`) ✅
+        - `CORS_ALLOWED_ORIGINS` ✅
+        - `SEPOLIA_RPC_URL` ✅
+        - `BACKEND_PRIVATE_KEY` ✅
+        - `RECIPE_REGISTRY_CONTRACT_ADDRESS` ✅
 
-### 6.3: Frontend Build & Backend Dockerization (Optional) (Not Started)
+### 6.3: Database Schema & Optimization ✅
+    - Create `recipes` table in production database (Fly.io). ✅
+    - Add index on `content_hash` column for performance (`CREATE INDEX idx_recipes_content_hash ON recipes(content_hash);`). ✅
+
+### 6.4: Frontend Environment Configuration ✅
+    - Set `VITE_API_BASE_URL` in Vercel environment variables to point to the deployed backend API (e.g., `https://proofpot-backend.fly.dev/api`). ✅
+
+### 6.5: Frontend API Service Robustness ✅
+    - Handle potential `null` response from `GET /api/recipes` when list is empty in `recipeService.ts`. ✅
+
+### 6.6: Performance - Backend Request Handling ✅
+    - Modify `HandleCreateRecipe` to run blockchain registration asynchronously in a goroutine, improving API response time. ✅
+
+### 6.7: Frontend Build & Backend Dockerization (Optional) (Not Started)
     - Create a production build of the React app (`npm run build`).
     - Create a `Dockerfile` for the Go backend application.
     - Build the Docker image.
 
-### 6.4: Deployment (Not Started)
-    - Deploy the frontend static build to Vercel, Netlify, or similar.
-    - Deploy the backend (Go app or Docker container) to Heroku, Fly.io, Render, AWS, etc.
-    - Configure environment variables in the deployment platforms.
-    - Set up CORS correctly on the backend to allow requests from the frontend domain.
-    - Test the live application thoroughly.
+### 6.8: Deployment (Partially Done - Vercel/Fly.io)
+    - Deploy the frontend static build to Vercel, Netlify, or similar. ✅ (Deployed to Vercel)
+    - Deploy the backend (Go app or Docker container) to Heroku, Fly.io, Render, AWS, etc. ✅ (Deployed to Fly.io)
+    - Configure environment variables in the deployment platforms. ✅ (Partially done, see 6.2/6.4)
+    - Set up CORS correctly on the backend to allow requests from the frontend domain. ✅ (Done via middleware and secret)
+    - Test the live application thoroughly. ✅ (Ongoing)
+
+### 6.9: Performance - Further Optimization (Not Started)
+    - Implement API pagination (`limit`, `offset`) for `GET /api/recipes`.
+    - Implement frontend pagination/infinite scroll.
+    - Optimize `RecipeListItem` payload (omit large fields).
+    - Replace background goroutine with a robust job queue (e.g., Asynq).

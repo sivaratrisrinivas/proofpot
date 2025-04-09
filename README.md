@@ -23,6 +23,13 @@ In today's digital world, sharing creative content like recipes online often lac
 
 This project follows a standard web application architecture with blockchain integration:
 
+**Live Deployment:**
+
+*   Frontend: [`https://proofpot.vercel.app/`](https://proofpot.vercel.app/) (Deployed on Vercel)
+*   Backend: [`https://proofpot-backend.fly.dev/`](https://proofpot-backend.fly.dev/) (Deployed on Fly.io)
+*   Database: Managed Postgres instance on Fly.io (`proof-pot-db`)
+*   Smart Contract: `0xA2D174eBCc81c4305Aee6a8E1A93b3561bD02e4B` (Sepolia Testnet)
+
 **High-Level Architecture:**
 
 ```mermaid
@@ -78,7 +85,50 @@ sequenceDiagram
     end
 ```
 
-## Quick Start
+## Deployment & Configuration
+
+### Frontend (Vercel)
+
+*   **URL:** [`https://proofpot.vercel.app/`](https://proofpot.vercel.app/)
+*   **Environment Variables:** The following variable needs to be set in the Vercel project settings:
+    *   `VITE_API_BASE_URL`: Set to the backend URL including the API path (e.g., `https://proofpot-backend.fly.dev/api`).
+
+### Backend (Fly.io)
+
+*   **App Name:** `proofpot-backend`
+*   **URL:** [`https://proofpot-backend.fly.dev/`](https://proofpot-backend.fly.dev/)
+*   **Deployment:** Deployed using `flyctl deploy` from the `backend` directory (requires `flyctl` installed and logged in).
+*   **Secrets:** The following secrets must be set using `fly secrets set <KEY>="<VALUE>" -a proofpot-backend`:
+    *   `DATABASE_URL`: Connection string to the production database (automatically set if using `fly postgres attach`).
+    *   `CORS_ALLOWED_ORIGINS`: Comma-separated list of allowed frontend origins (e.g., `https://proofpot.vercel.app,http://localhost:5173`).
+    *   `SEPOLIA_RPC_URL`: RPC endpoint URL for the Sepolia testnet (e.g., from Alchemy/Infura).
+    *   `BACKEND_PRIVATE_KEY`: Private key of the wallet designated as the owner of the `RecipeRegistry` contract.
+    *   `RECIPE_REGISTRY_CONTRACT_ADDRESS`: Address of the deployed `RecipeRegistry` contract.
+
+### Database (Fly.io Postgres)
+
+*   **App Name:** `proof-pot-db` (Managed Fly Postgres instance)
+*   **Creation:** Created using `fly postgres create`.
+*   **Attachment:** Attached to the backend app using `fly postgres attach --app proofpot-backend proof-pot-db`. This automatically sets the `DATABASE_URL` secret on the backend.
+*   **Schema Setup:** After creating the instance, connect using `fly proxy` + `psql` and execute the following:
+    ```sql
+    -- Create the main table
+    CREATE TABLE recipes (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR NOT NULL,
+        ingredients TEXT NOT NULL,
+        steps TEXT NOT NULL,
+        creator_address VARCHAR NOT NULL,
+        content_hash VARCHAR NOT NULL UNIQUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        image_url TEXT
+    );
+
+    -- Add an index for faster lookups by content hash (crucial for performance)
+    CREATE INDEX idx_recipes_content_hash ON recipes(content_hash);
+    ```
+
+## Quick Start (Local Development)
 
 **Prerequisites:**
 
@@ -107,23 +157,42 @@ sequenceDiagram
         *   Update `RECIPE_REGISTRY_CONTRACT_ADDRESS` in the *backend's* `.env` file with the new address.
         *   `cd ..`
 
-3.  **Backend Setup:**
+3.  **Backend Setup (Local):**
     *   `cd backend`
-    *   **Database:** Ensure PostgreSQL is running. Create a database (e.g., `proofpot_dev`). You will need to add the `image_url` column manually if starting from scratch:
+    *   **Database (Local):** Ensure PostgreSQL is running locally. Create a database (e.g., `proofpot_dev`). Create the table and index:
         ```sql
-        -- Connect to psql
-        ALTER TABLE recipes ADD COLUMN image_url TEXT;
+        -- Connect to psql for your LOCAL database
+        psql -d proofpot_dev
+
+        -- Create the table
+        CREATE TABLE recipes (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR NOT NULL,
+            ingredients TEXT NOT NULL,
+            steps TEXT NOT NULL,
+            creator_address VARCHAR NOT NULL,
+            content_hash VARCHAR NOT NULL UNIQUE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            image_url TEXT
+        );
+
+        -- Create the index
+        CREATE INDEX idx_recipes_content_hash ON recipes(content_hash);
+
+        -- Exit psql
+        \q
         ```
-    *   **Environment:** Copy the example environment file: `cp .env.example .env`.
-    *   **Configure `.env`:** Open `.env` and fill in your actual `DATABASE_URL` (ensure special characters in password are URL-encoded), your `SEPOLIA_RPC_URL` (e.g., from Alchemy/Infura), a dedicated `BACKEND_PRIVATE_KEY` for the server to interact with the contract, and the correct `RECIPE_REGISTRY_CONTRACT_ADDRESS` (use `0x0CB9e22727D43B2d909081c329D5D056375Fab65` if you didn't redeploy). **The address derived from `BACKEND_PRIVATE_KEY` MUST be the owner of the deployed contract.**
-    *   **Dependencies:** `go mod tidy` (This should run automatically if needed, but good practice).
-    *   **Run:** `go run main.go` (Server listens on `http://localhost:8080`).
+    *   **Environment (Local):** Copy the example environment file: `cp .env.example .env`.
+    *   **Configure `.env` (Local):** Open `.env` and fill in your **local** `DATABASE_URL`, your `SEPOLIA_RPC_URL`, a dedicated `BACKEND_PRIVATE_KEY` (which owns the contract), and the `RECIPE_REGISTRY_CONTRACT_ADDRESS` (e.g., `0xA2D174eBCc81c4305Aee6a8E1A93b3561bD02e4B`).
+    *   **Dependencies:** `go mod tidy`.
+    *   **Run (Local):** `go run main.go` (Server listens on `http://localhost:8080`).
     *   Keep this terminal running.
 
-4.  **Frontend Setup:**
+4.  **Frontend Setup (Local):**
     *   Open a **new terminal** in the project root.
+    *   **Environment (Local):** Ensure you have a `.env` file in the root with `VITE_API_BASE_URL=http://localhost:8080/api` (if you need to override the default `/api`).
     *   **Dependencies:** `npm install` (or `bun install`).
-    *   **Run:** `npm run dev` (or `bun dev`).
+    *   **Run (Local):** `npm run dev` (or `bun dev`).
     *   Open your browser to `http://localhost:5173` (or the port shown).
 
 ## Usage
