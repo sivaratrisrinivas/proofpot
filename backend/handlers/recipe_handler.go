@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"database/sql" // Needed for sql.ErrNoRows
-	"errors"       // Needed for errors.Is
+	"errors"
 	"log"
 	"net/http"
 	"proofpot-backend/blockchain"
@@ -10,98 +9,108 @@ import (
 	"proofpot-backend/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn" // Import for checking specific PostgreSQL errors
 )
 
 // HandleCreateRecipe handles the POST request to create a new recipe.
 func HandleCreateRecipe(c *gin.Context) {
-	var newRecipe models.Recipe
+	var payload models.RecipeCreatePayload // Bind to payload struct
 
 	// Bind and validate JSON
-	if err := c.ShouldBindJSON(&newRecipe); err != nil {
+	if err := c.ShouldBindJSON(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 		return
 	}
 
+	// Basic validation (example: check for empty fields)
+	if payload.Title == "" || payload.Ingredients == "" || payload.Steps == "" || payload.CreatorAddress == "" || payload.ContentHash == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+
 	// --- Step 3.5: Duplicate Hash Check ---
-	exists, err := database.CheckHashExists(newRecipe.ContentHash)
+	exists, err := database.CheckHashExists(payload.ContentHash)
 	if err != nil {
-		// Log the actual database error for server-side debugging
-		log.Printf("Error checking hash existence for %s: %v", newRecipe.ContentHash, err)
-		// Return a generic server error to the client
+		log.Printf("Error checking hash existence for %s: %v", payload.ContentHash, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error checking recipe hash"})
 		return
 	}
 	if exists {
-		// Hash already exists, return 409 Conflict
 		c.JSON(http.StatusConflict, gin.H{"error": "Recipe with this content hash already exists"})
 		return
 	}
 	// --- End Step 3.5 ---
 
 	// --- Step 3.6: Store Recipe in Database ---
-	insertedID, err := database.InsertRecipe(newRecipe)
+	// Pass database.DB and the payload
+	insertedID, err := database.InsertRecipe(database.DB, payload)
 	if err != nil {
 		log.Printf("Error inserting recipe into database: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error saving recipe"})
+		// Check for specific DB errors like unique constraint violation (though CheckHashExists should prevent this)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // 23505 is unique_violation
+			c.JSON(http.StatusConflict, gin.H{"error": "Recipe with this content hash already exists (database constraint)"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error saving recipe"})
+		}
 		return
 	}
-	newRecipe.ID = insertedID // Set the ID from the database result
-	// Note: CreatedAt is automatically set by the database default
 	// --- End Step 3.6 ---
 
 	// --- Step 3.7: Trigger Smart Contract Interaction ---
-	err = blockchain.RegisterRecipeOnChain(newRecipe.ContentHash)
+	err = blockchain.RegisterRecipeOnChain(payload.ContentHash, payload.CreatorAddress)
 	if err != nil {
-		// Log the error, but maybe don't fail the whole request?
-		// The recipe is saved in the DB, but contract call failed.
-		// For MVP, just logging might be okay. Could add a status field to recipe later.
-		log.Printf("WARNING: Failed to register recipe hash %s on chain after DB insert: %v", newRecipe.ContentHash, err)
-		// Optionally: return a different status or modified response to indicate partial success?
-		// For now, we proceed to return 201 Created as the core DB operation succeeded.
+		log.Printf("WARNING: Failed to register recipe hash %s on chain after DB insert: %v", payload.ContentHash, err)
+		// Proceed even if blockchain call fails, recipe is in DB
 	}
 	// --- End Step 3.7 ---
 
-	// Respond 201 Created with the full recipe data (including the new ID)
-	c.JSON(http.StatusCreated, newRecipe)
+	// Respond 201 Created with essential data from payload + ID
+	c.JSON(http.StatusCreated, gin.H{
+		"id":             insertedID,
+		"title":          payload.Title,
+		"creatorAddress": payload.CreatorAddress,
+		"contentHash":    payload.ContentHash,
+		"imageUrl":       payload.ImageURL, // Include image URL if it's part of the payload
+		// CreatedAt is not available here unless we re-fetch
+	})
 }
 
-// handleGetRecipes handles the GET request to retrieve all recipes.
+// HandleGetRecipes handles the GET request to retrieve all recipes.
 func HandleGetRecipes(c *gin.Context) {
-	recipes, err := database.GetAllRecipes()
+	// Pass database.DB
+	recipes, err := database.GetAllRecipes(database.DB)
 	if err != nil {
 		log.Printf("Error retrieving recipes from database: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error retrieving recipes"})
 		return
 	}
 
-	// Return 200 OK with the list of recipes
-	// If no recipes exist, this will correctly return an empty list `[]`
 	c.JSON(http.StatusOK, recipes)
 }
 
 // HandleGetRecipeByHash handles the GET request to retrieve a single recipe by its hash.
 func HandleGetRecipeByHash(c *gin.Context) {
-	// Get the hash from the URL parameter
 	hash := c.Param("hash")
 	if hash == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Recipe hash parameter is missing"})
 		return
 	}
 
-	// Call the database function to get the recipe
-	recipe, err := database.GetRecipeByHash(hash)
+	// Pass database.DB
+	recipe, err := database.GetRecipeByHash(database.DB, hash)
 	if err != nil {
-		// Check if the error is specifically "no rows found"
-		if errors.Is(err, sql.ErrNoRows) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
-		} else {
-			// Log the actual database error and return a generic server error
-			log.Printf("Error retrieving recipe by hash %s: %v", hash, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error retrieving recipe"})
-		}
+		// Use the specific error type returned by GetRecipeByHash if needed
+		// Assuming GetRecipeByHash returns nil, nil for not found
+		log.Printf("Error retrieving recipe by hash %s: %v", hash, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error retrieving recipe"})
+		return // Return internal server error for any DB error
+	}
+
+	if recipe == nil { // Check if recipe is nil (indicating not found)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
 		return
 	}
 
-	// Return 200 OK with the found recipe
 	c.JSON(http.StatusOK, recipe)
 }

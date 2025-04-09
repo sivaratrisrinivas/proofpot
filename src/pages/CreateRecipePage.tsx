@@ -134,8 +134,9 @@ const CreateRecipePage = () => {
     }
 
     const contentToHash = ingredients.join('\n') + '\n' + steps.join('\n');
-
+    console.log("Content being hashed:", JSON.stringify(contentToHash));
     const contentHash = ethers.sha256(ethers.toUtf8Bytes(contentToHash));
+    console.log("Calculated contentHash:", contentHash);
 
     setIsSubmitting(true);
 
@@ -157,6 +158,7 @@ const CreateRecipePage = () => {
       };
 
       const response = await addRecipe(recipePayload as any);
+      console.log("Received response from addRecipe service:", response);
 
       let tokenId = null;
       let txHash = null;
@@ -188,7 +190,13 @@ const CreateRecipePage = () => {
         description: "Your recipe has been submitted successfully",
       });
 
-      navigate(`/recipe/${response.id}`);
+      console.log("Attempting to navigate with hash:", response.contentHash);
+      if (response.contentHash) {
+        navigate(`/recipes/${response.contentHash}`);
+      } else {
+        console.error("Content hash missing in addRecipe response, navigating home.");
+        navigate('/');
+      }
     } catch (error) {
       console.error('Error creating recipe:', error);
       toast({

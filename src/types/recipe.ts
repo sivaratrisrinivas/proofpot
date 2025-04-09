@@ -2,8 +2,8 @@ export interface Recipe {
   id: number;
   title: string;
   description: string;
-  ingredients: string;
-  steps: string;
+  ingredients: string[];
+  steps: string[];
   creatorAddress: string;
   contentHash: string;
   createdAt: string;
@@ -27,4 +27,13 @@ export interface RecipeListItem {
   description?: string;
   imageUrl?: string;
   tags?: string[];
+}
+
+// Type for the specific response from POST /api/recipes
+export interface RecipeCreationApiResponse {
+  id: number;
+  title: string;
+  creatorAddress: string;
+  contentHash: string;
+  createdAt: string;
 }

@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getRecipeById } from '@/services/recipeService';
+import { getRecipeByHash } from '@/services/recipeService';
 import { Recipe } from '@/types/recipe';
-import { Clock, Users, ChevronLeft, ArrowLeft } from 'lucide-react';
+import { Clock, Users, ChevronLeft, ArrowLeft, Hash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -18,20 +17,26 @@ import {
 } from '@/components/ui/breadcrumb';
 
 const RecipeDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { hash } = useParams<{ hash: string }>();
   const navigate = useNavigate();
+
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadRecipe = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        if (!id) {
-          navigate('/');
+        if (!hash) {
+          console.error("Recipe hash parameter missing from URL");
+          setError("Recipe hash is missing in the URL.");
+          setIsLoading(false);
           return;
         }
 
-        const data = await getRecipeById(id);
+        const data = await getRecipeByHash(hash);
 
         if (!data) {
           toast({
@@ -39,26 +44,28 @@ const RecipeDetailPage = () => {
             description: "The recipe you're looking for doesn't exist or has been removed.",
             variant: "destructive"
           });
-          navigate('/');
+          setError("Recipe not found.");
+          setIsLoading(false);
           return;
         }
 
         setRecipe(data);
-        setIsLoading(false);
       } catch (error) {
         console.error('Failed to load recipe:', error);
+        const errorMsg = error instanceof Error ? error.message : "An unknown error occurred fetching recipe details.";
+        setError(errorMsg);
         toast({
           title: "Error loading recipe",
-          description: "There was a problem loading this recipe. Please try again.",
+          description: errorMsg,
           variant: "destructive"
         });
+      } finally {
         setIsLoading(false);
-        navigate('/');
       }
     };
 
     loadRecipe();
-  }, [id, navigate]);
+  }, [hash, navigate]);
 
   if (isLoading) {
     return (
@@ -86,16 +93,24 @@ const RecipeDetailPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto py-12 text-center text-destructive">
+        <h2 className="text-xl font-medium mb-2">Error Loading Recipe</h2>
+        <p>{error}</p>
+        <Button onClick={() => navigate('/')} className="mt-4">Go Home</Button>
+      </div>
+    );
+  }
+
   if (!recipe) {
+    // This case should ideally be covered by isLoading or error states now
+    // but keep as a fallback
     return null;
   }
 
-  const getCreatorInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
+  const getAvatarFallback = (address: string) => {
+    return address ? `${address.substring(0, 2)}..${address.substring(address.length - 2)}` : '?';
   };
 
   return (
@@ -145,11 +160,11 @@ const RecipeDetailPage = () => {
 
           <div className="flex items-center mb-6">
             <Avatar className="h-10 w-10 mr-3">
-              <AvatarFallback>{getCreatorInitials(recipe.creator.name)}</AvatarFallback>
+              <AvatarFallback>{getAvatarFallback(recipe.creatorAddress)}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">Recipe by {recipe.creator.name}</p>
-              <p className="text-sm text-muted-foreground">Published on {recipe.createdAt}</p>
+              <p className="font-medium break-all">Recipe by {recipe.creatorAddress}</p>
+              <p className="text-sm text-muted-foreground">Published on {new Date(recipe.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
 

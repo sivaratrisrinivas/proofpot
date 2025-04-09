@@ -27,7 +27,8 @@ var (
 	backendKey      *ecdsa.PrivateKey
 )
 
-const recipeRegistryABI = `[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"recipeHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"creator","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"RecipeAdded","type":"event"},{"inputs":[{"internalType":"bytes32","name":"_recipeHash","type":"bytes32"}],"name":"addRecipe","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"recipeOwners","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"recipeTimestamps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]` // ABI from artifact
+// Updated ABI for RecipeRegistry with Ownable and modified addRecipe
+const recipeRegistryABI = `[{"inputs":[{"internalType":"address","name":"initialOwner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"recipeHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"creator","type":"address"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"}],"name":"RecipeAdded","type":"event"},{"inputs":[{"internalType":"bytes32","name":"_recipeHash","type":"bytes32"},{"internalType":"address","name":"_creator","type":"address"}],"name":"addRecipe","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"recipeOwners","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"name":"recipeTimestamps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
 
 // InitBlockchain initializes the Ethereum client, contract instance, and transaction signer.
 func InitBlockchain() error {
@@ -103,12 +104,12 @@ func InitBlockchain() error {
 }
 
 // RegisterRecipeOnChain interacts with the deployed RecipeRegistry contract to add a recipe hash.
-func RegisterRecipeOnChain(contentHashHex string) error {
+func RegisterRecipeOnChain(contentHashHex string, creatorAddressStr string) error {
 	if ethClient == nil || auth == nil || backendKey == nil {
 		return fmt.Errorf("blockchain service not initialized correctly")
 	}
 
-	log.Printf("Attempting to register hash on chain: %s", contentHashHex)
+	log.Printf("Attempting to register hash %s for creator %s on chain", contentHashHex, creatorAddressStr)
 
 	// Convert the hex hash string (e.g., "0x...") to [32]byte
 	hashBytes, err := hex.DecodeString(strings.TrimPrefix(contentHashHex, "0x"))
@@ -118,18 +119,36 @@ func RegisterRecipeOnChain(contentHashHex string) error {
 	var contentHash [32]byte
 	copy(contentHash[:], hashBytes)
 
+	// Convert creator address string to common.Address
+	if !common.IsHexAddress(creatorAddressStr) {
+		return fmt.Errorf("invalid creator address format: %s", creatorAddressStr)
+	}
+	creatorAddress := common.HexToAddress(creatorAddressStr)
+
 	// Create a contract instance bound to the specific address
 	// Note: We use the low-level `abi.Pack` and `ethClient.SendTransaction` here
 	// because we don't have the generated Go bindings for the contract.
 	// Alternatively, use `abigen` to generate Go bindings for a typed interface.
 
-	// Pack the data for the addRecipe function call
-	callData, err := contractABI.Pack("addRecipe", contentHash)
+	// Pack the data for the addRecipe function call, now including creatorAddress
+	callData, err := contractABI.Pack("addRecipe", contentHash, creatorAddress)
 	if err != nil {
 		return fmt.Errorf("failed to pack data for addRecipe: %w", err)
 	}
 
 	// Create the transaction
+	// Ensure nonce management is robust, fetch latest pending nonce before sending
+	pendingNonce, err := ethClient.PendingNonceAt(context.Background(), auth.From)
+	if err != nil {
+		return fmt.Errorf("failed to get pending nonce before sending tx: %w", err)
+	}
+	auth.Nonce = big.NewInt(int64(pendingNonce))
+	// Re-fetch gas price for potentially better estimate
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err == nil {
+		auth.GasPrice = gasPrice
+	}
+
 	tx := types.NewTransaction(auth.Nonce.Uint64(), contractAddress, auth.Value, auth.GasLimit, auth.GasPrice, callData)
 
 	// Sign the transaction
@@ -167,9 +186,6 @@ func RegisterRecipeOnChain(contentHashHex string) error {
 
 	log.Printf("Transaction confirmed successfully! Block: %d, Tx Hash: %s", receipt.BlockNumber, signedTx.Hash().Hex())
 	// --- End Optional Wait ---
-
-	// Increment nonce for the *next* transaction from this backend wallet
-	auth.Nonce.Add(auth.Nonce, big.NewInt(1))
 
 	return nil
 }

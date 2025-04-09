@@ -1,8 +1,12 @@
-import { Recipe } from '@/types/recipe';
+import { Recipe, RecipeListItem, RecipeCreationApiResponse } from '@/types/recipe';
 // import { v4 as uuidv4 } from 'uuid'; // No longer needed for mock
+
+// Base URL for the API
+const API_BASE_URL = '/api'; // Assuming backend runs on the same host/port or proxied
 
 // Keep mock data for now if getRecipes/getRecipeById still use it
 // Can be removed later when backend endpoints for GET are implemented
+/*
 const mockRecipes: Recipe[] = [
   {
     id: '1',
@@ -108,6 +112,7 @@ const mockRecipes: Recipe[] = [
     servings: 4
   }
 ];
+*/
 
 // Define structure received from the component
 interface RecipeComponentPayload {
@@ -118,8 +123,7 @@ interface RecipeComponentPayload {
   creatorAddress: string;
   contentHash: string;
   // Include other optional fields from component form state if needed
-  // creatorName?: string;
-  // imageUrl?: string;
+  imageUrl?: string;
   // tags?: string[];
   // etc.
 }
@@ -127,11 +131,12 @@ interface RecipeComponentPayload {
 // Define structure sent TO the backend (matching Go struct)
 interface RecipeApiPayload {
   title: string;
-  description: string;
+  // description: string; // Backend doesn't use description from creation payload yet
   ingredients: string; // Joined string for backend
   steps: string;       // Joined string for backend
   creatorAddress: string;
   contentHash: string;
+  imageUrl?: string;   // Added imageUrl field (optional)
   // Omit other fields not present in the Go `models.Recipe` struct
 }
 
@@ -141,36 +146,100 @@ interface RecipeApiResponse extends Recipe {
   // id should be populated by backend
 }
 
+// Helper for full Recipe transformation (for getRecipeByHash, addRecipe response)
+const transformBackendRecipeToRecipe = (backendRecipe: any): Recipe => {
+  // Ensure required fields always have a default, even if backend data is weird
+  return {
+    id: backendRecipe?.id ?? 0, // Use nullish coalescing for defaults
+    title: backendRecipe?.title ?? '',
+    creatorAddress: backendRecipe?.creatorAddress ?? '',
+    contentHash: backendRecipe?.contentHash ?? '',
+    createdAt: backendRecipe?.createdAt ?? '',
+    // Ensure ingredients/steps are always arrays, split non-empty strings
+    ingredients: typeof backendRecipe?.ingredients === 'string' && backendRecipe.ingredients ? backendRecipe.ingredients.split('\n') : [],
+    steps: typeof backendRecipe?.steps === 'string' && backendRecipe.steps ? backendRecipe.steps.split('\n') : [],
+    // Ensure optional fields that should be arrays are always arrays
+    tags: Array.isArray(backendRecipe?.tags) ? backendRecipe.tags : [], // Handle if backend sends null/undefined/non-array
+    // Optional fields default to undefined if not present
+    description: backendRecipe?.description,
+    imageUrl: backendRecipe?.imageUrl,
+    preparationTime: backendRecipe?.preparationTime,
+    cookingTime: backendRecipe?.cookingTime,
+    servings: backendRecipe?.servings,
+  };
+};
+
+// Helper for RecipeListItem transformation (for getRecipes)
+const transformBackendRecipeToListItem = (backendListItem: any): RecipeListItem => {
+  // Ensure required fields always have a default
+  return {
+    id: backendListItem?.id ?? 0,
+    title: backendListItem?.title ?? '',
+    creatorAddress: backendListItem?.creatorAddress ?? '',
+    contentHash: backendListItem?.contentHash ?? '',
+    createdAt: backendListItem?.createdAt ?? '',
+    // Optional fields default to undefined
+    description: backendListItem?.description,
+    imageUrl: backendListItem?.imageUrl,
+    tags: Array.isArray(backendListItem?.tags) ? backendListItem.tags : [], // Ensure tags is always array
+  };
+};
+
 // --- Service functions --- 
 
-// getRecipes and getRecipeById still use mock data for now
-export const getRecipes = (): Promise<Recipe[]> => {
-  return Promise.resolve(mockRecipes);
+// Updated getRecipes to fetch from backend and return RecipeListItem[]
+export const getRecipes = async (): Promise<RecipeListItem[]> => {
+  const response = await fetch(`${API_BASE_URL}/recipes`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch recipes');
+  }
+  const data = await response.json();
+  // Transform each item using the specific list item transformer
+  return data.map(transformBackendRecipeToListItem);
 };
 
-export const getRecipeById = (id: string): Promise<Recipe | undefined> => {
-  const recipe = mockRecipes.find(recipe => recipe.id === id);
-  return Promise.resolve(recipe);
+// New function to fetch by hash, returns full Recipe
+export const getRecipeByHash = async (hash: string): Promise<Recipe | null> => {
+  const normalizedHash = hash.startsWith('0x') ? hash : `0x${hash}`;
+  console.log(`[RecipeService] Fetching recipe by hash: ${normalizedHash}`); // Log hash being fetched
+  try {
+    const response = await fetch(`${API_BASE_URL}/recipes/${normalizedHash}`);
+    console.log(`[RecipeService] Fetch response status for ${normalizedHash}: ${response.status}`); // Log status
+
+    if (response.status === 404) {
+      return null;
+    }
+    if (!response.ok) {
+      // Log the error response text for more details
+      const errorText = await response.text();
+      console.error(`[RecipeService] Error fetching recipe ${normalizedHash}. Status: ${response.status}. Body: ${errorText}`);
+      throw new Error(`Failed to fetch recipe with hash ${hash}: ${response.statusText}`);
+    }
+    const backendRecipe = await response.json();
+    console.log(`[RecipeService] Received backend data for ${normalizedHash}:`, backendRecipe); // Log received data
+    // Transform using the full recipe transformer
+    return transformBackendRecipeToRecipe(backendRecipe);
+  } catch (error) {
+    console.error(`[RecipeService] Network or other error fetching recipe ${normalizedHash}:`, error);
+    throw error; // Re-throw the error to be caught by the component
+  }
 };
 
-// --- Updated addRecipe function --- 
-// Now accepts the payload from the component and transforms it for the API
-export const addRecipe = async (componentPayload: RecipeComponentPayload): Promise<RecipeApiResponse> => {
-  const API_ENDPOINT = '/api/recipes';
+// Updated addRecipe, returns the explicit creation response structure
+export const addRecipe = async (componentPayload: RecipeComponentPayload): Promise<RecipeCreationApiResponse> => {
+  const API_ENDPOINT = `${API_BASE_URL}/recipes`;
 
-  // Transform the payload: Join arrays into strings
-  // Using newline as a simple delimiter. Consider a more robust method 
-  // (like JSON stringifying the array) if newlines might be in the data itself.
+  // Ensure imageUrl is included if present in componentPayload
   const apiPayload: RecipeApiPayload = {
     title: componentPayload.title,
-    description: componentPayload.description,
-    ingredients: componentPayload.ingredients.join('\n'), // Join array to string
-    steps: componentPayload.steps.join('\n'),             // Join array to string
+    // description: '', // Removed description as backend doesn't use it yet
+    ingredients: componentPayload.ingredients.join('\n'),
+    steps: componentPayload.steps.join('\n'),
     creatorAddress: componentPayload.creatorAddress,
     contentHash: componentPayload.contentHash,
+    imageUrl: componentPayload.imageUrl, // Add the imageUrl from the component payload
   };
-
-  console.log("Transformed payload for backend:", apiPayload); // Log transformed payload
+  console.log("Transformed payload for backend:", apiPayload); // Log the payload being sent
 
   try {
     const response = await fetch(API_ENDPOINT, {
@@ -178,7 +247,7 @@ export const addRecipe = async (componentPayload: RecipeComponentPayload): Promi
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(apiPayload), // Send the transformed payload
+      body: JSON.stringify(apiPayload),
     });
 
     if (!response.ok) {
@@ -186,16 +255,16 @@ export const addRecipe = async (componentPayload: RecipeComponentPayload): Promi
       try {
         const errorData = await response.json();
         errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-        /* ignore */
-      }
+      } catch (e) { /* ignore */ }
       console.error("Backend responded with error:", errorMsg);
       throw new Error(errorMsg);
     }
 
-    const createdRecipe: RecipeApiResponse = await response.json();
-    console.log("Received created recipe from backend:", createdRecipe);
-    return createdRecipe;
+    // Parse the explicit JSON response from the backend
+    const createdRecipeResponse: RecipeCreationApiResponse = await response.json();
+    console.log("Received created recipe from backend:", createdRecipeResponse);
+    // No transformation needed here as backend sends exactly what frontend needs for nav
+    return createdRecipeResponse;
 
   } catch (error) {
     console.error("Error calling addRecipe API:", error);
